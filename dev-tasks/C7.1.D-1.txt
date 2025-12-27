@@ -1,0 +1,9 @@
+A new service that exposes:
+	•	POST /transactions/purchase (idempotency header required)
+	•	GET /health
+
+And it will:
+	•	read account by account_id and verify it belongs to the user
+	•	enforce status == ACTIVE
+	•	validate amount/currency
+	•	return a clean JSON response (no ledger yet — that’s D-3/D-5)

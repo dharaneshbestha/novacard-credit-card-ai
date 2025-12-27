@@ -1,0 +1,11 @@
+C7.2.2 Initialize snapshot rows for existing accounts
+
+Requirement: Every account must have a snapshot row.
+Expected result: No null lookups; balance fetch always works.
+Approach: Insert missing rows.
+
+INSERT INTO account_balance_snapshots (account_id, balance_minor)
+SELECT a.account_id, 0
+FROM accounts a
+LEFT JOIN account_balance_snapshots s ON s.account_id = a.account_id
+WHERE s.account_id IS NULL;

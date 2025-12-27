@@ -1,0 +1,10 @@
+C7.2.6 Add indexes to support rebuild + audit queries
+
+Requirement: Efficient rebuilds and ledger reads.
+Expected result: fast queries for “latest entries” and rebuild.
+Approach:
+CREATE INDEX IF NOT EXISTS idx_ledger_account_created
+ON ledger_entries(account_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_ledger_account_entry_id
+ON ledger_entries(account_id, ledger_entry_id);

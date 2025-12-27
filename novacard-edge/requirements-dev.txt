@@ -1,0 +1,158 @@
+# credit-card-ai/
+# ├── app/
+# │   ├── __init__.py      # Makes 'app' a package
+# │   ├── main.py          # Entry point (the "Startup.cs" equivalent)
+# │   ├── api/             # API Route controllers
+# │   ├── core/            # Config, Security, Constants
+# │   ├── models/          # DB Models (SQLAlchemy)
+# │   ├── schemas/         # DTOs (Pydantic)
+# │   ├── services/        # Business Logic
+# │   └── crud/            # Direct DB interactions
+# ├── .env                 # Secret keys (ignored by git)
+# └── requirements.txt     # Dependencies
+
+
+# # # uv add redis
+
+
+# # # mkdir novacard-user-mock
+# # # cd novacard-user-mock
+
+# # # TOKEN="eyJhbGciOiJSUzI1NiIsImtpZCI6ImRmOTg5NGU5LTYxZWYtNGIxMC1iOTI1LTI0NWU5MTBhNjA4ZiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjYxNTk0MjksImV4cCI6MTc2NjE2MDMyOSwic2NvcGUiOiJ1c2VyIn0.ZE5srfyG1oS2oUuTbE6yf9uYR2v0aWM3yRn-Thz9XiB7HLUmqACe-4gv7EHsve1FWUcKkcuOTBwZH7Pd6R_MuXtnPFWt6zZG0054mQNdGGCEeXWZCSsS_WgandRV43z9ErU0BNPm02dKm8ORTnpNNQvi5XXWKB0k6gta9j8MER66Jwm6mAQacHKYoMCAJlhegIzUdi3IEDAy8nWYyKzZQv-mm1uRVwYND8nl0pKuOWhqKQozs1d4b03LslMS2cmTgSIhjx1IQh5Gq-xgeSa4EzpnuhMWIOuF1Sq5zgTkprAGQaLyoNSkoUmOg5_gtsepVzvTMA_bvz-IjOb7mOW9GQ"
+
+# # # curl -v http://127.0.0.1:8000/users/me -H "Authorization: Bearer $TOKEN"
+
+# # # curl -v http://127.0.0.1:8000/users/me
+
+# # # curl -v http://127.0.0.1:8000/metrics
+# # # uv add python-jose
+
+# # # cd novacard-credit-card-ai
+# # # uv run uvicorn app.main:app --reload --port 8000
+# uv run uvicorn main:app --reload --port 8000
+
+curl -s -X POST http://127.0.0.1:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"a","password":"b"}'
+# curl -i http://127.0.0.1:8000/users/me \
+#   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBmNzk0LWVjYTMtNDlkOC05MTQwLWRkNWRjOGZkMmQ2ZiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjYxNzgwNjgsImV4cCI6MTc2NjE3ODk2OCwic2NvcGUiOiJ1c2VyIn0.QTxR5A2qlG8ORBySWoQZFfjcMsePTOmPnkcHodt4g39ahcLh6GOUbAEbsu9TNA6L9lXRUREW3icY_D6Pze4BVVsiuhyEXGQ0U7Nabo_YbNpoCGdc9pPZK8V5vP0lCV5T9X51AHDvev200LQi7yAhp8IQu-Jn3ACRlRXwzxt5M_zU0OSrvc2yLbIdLncWmOBC7a0yHkNhY9ceXtxrVwGRH9J3ASG8HdGP1MomWXhS4k4yEezQf5zhUtSQfOOyRVtT9-Vnb2S1Zq7wqCRQyIDdz9FsLmapNd-qU4DLa0TsVAGlrYHnsAoIc6_sM-Pm61j0f5AKt7zRY0p9wQpcWMGsxQ"
+
+# # curl -i http://127.0.0.1:8000/users/sleep?seconds=6 \
+# #   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBmNzk0LWVjYTMtNDlkOC05MTQwLWRkNWRjOGZkMmQ2ZiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjYxNjcyMTIsImV4cCI6MTc2NjE2ODExMiwic2NvcGUiOiJ1c2VyIn0.DEKyz7O0jn9EiHJdpeSpJvUa1BlYFb19OVJBdVYsx0Wb30H0PJ_zva4qoRZHSeBhJbrnl7rWvxO_JuHFLuFujTHRqkaU0H6s0Uc4ARFbnDJwuiJOtZqPXINyb6toXxLgiJubNCXVOwA6j7AIXKsqWSdaq8dB16rpiWeAEqsdgfLHeklRm8O1QDjsEMWRBLg1lhrMVqp28FS4t58ksbphKVA_4B_AYpEjRyyqiD7kSrMzHNkKBVCeByele_-i0Ww4KxEht2TM7UOhSeNrbhid87scwiqUo4Qto94wcpXgVAWRdLSDQ00uR6KlxVJIwUOoarCUXiT_AxnA5Syfaym7UQ"
+
+# curl -i "http://127.0.0.1:8000/users/me" \
+#   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjY1MTU2MDMsImV4cCI6MTc2NjUxNjUwMywic2NvcGUiOiJ1c2VyIn0.9seYsAHQrlo5UzGLA0Asa7KmqYp7F7cZfTupw5-n34s"
+curl -i "http://127.0.0.1:8000/users/me" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjY3ODgzMjMsImV4cCI6MTc2Njc4OTIyMywic2NvcGUiOiJ1c2VyIn0.MyAx_UN1Aj9eOfC6NHlPe-3xF59oD6G5l7iO3K3eMZc"
+
+# TOKEN="eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjY1MTAyOTYsImV4cCI6MTc2NjUxMTE5Niwic2NvcGUiOiJ1c2VyIn0.kvEIlvdlq_6ejqTdNC8lIHMb2Y2lDkUkhiGQRN-uxkY" python - <<'PY'
+# import base64, json, os, time
+# t=os.environ["TOKEN"]
+# p=t.split(".")[1] + "=" * (-len(t.split(".")[1])%4)
+# payload=json.loads(base64.urlsafe_b64decode(p))
+# print(payload)
+# now=int(time.time())
+# print("now:", now, "exp:", payload.get("exp"), "seconds_until_exp:", (payload.get("exp", now) or now) - now)
+# PY
+
+# TOKEN=$(curl -s http://127.0.0.1:8000/auth/login \
+#   -H "Content-Type: application/json" \
+#   -d '{}' | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+# echo "$TOKEN" | tr '.' '\n' | wc -l
+
+# for i in {1..8}; do
+#   echo "try $i:"
+#   time curl -s -o /dev/null -w "%{http_code}\n" \
+#     "http://127.0.0.1:8000/users/sleep?seconds=6" \
+#     -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBmNzk0LWVjYTMtNDlkOC05MTQwLWRkNWRjOGZkMmQ2ZiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjYxNzE0ODYsImV4cCI6MTc2NjE3MjM4Niwic2NvcGUiOiJ1c2VyIn0.JSUVWcbEvyFleH1YOEmbC6VeptzSvlzZVfBKPRHd0ka8Ah7dSlORpNcs803yX-E4yC_acGUnUle8I_4SIITq3QesmomHJ7aF1gMAqIinXnTlprGxWfcmoLf2aJ3uidAwutTFz_fzghZy4Azn9vSbjesAQwp1L65AIteA0jQndDK98iegck8kp42WURz7cfgsdUeT1DjPGFyLLwsU7Q0LV0QBhDa6s52gGW5oKQSI2aYLcY-svAlPWmcoonsASLCeN_MJcV5ZMoMvz25jfyic6jK216hSYki32NlEnqDGMO_nQy1BD6C_abbxc8IXldxVkWRTMP7EQLwaFTS4vfr2Qg"
+# done
+
+
+
+# TOKEN=$(curl -s http://127.0.0.1:8000/auth/login \
+#   -H "Content-Type: application/json" \
+#   -d '{"user_id":"user_123","scope":"user"}' \
+#   | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+# echo "$eyJhbGciOiJSUzI1NiIsImtpZCI6IjVhMGViNThlLTFmNWYtNDNhYy05OGY1LWJlNzM0MTdhYTc1YSIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjY1MDgzMjgsImV4cCI6MTc2NjUwOTIyOCwic2NvcGUiOiJ1c2VyIn0.t3sSo7gNc04fc9IRsYvLkBEiJifrCHoksXDaeHHXPYV6rK6cIMrS3-eHGqic3JT5TxvVxfy5Riqk3oimRr_ChDm-rWOOGWwryc7OeSc7XLt07NTQAomMYQFuBeR-32zDl7Pm184rh0rbsch_oGoKZPJ0dzBKHQmNfkT6xurbYWOIJVhdLqSBg81nKcbdK5A1b1tYgHw8b39vBPKgnUWC0dM244YJrk3XJtCpQ6ymtgZddvDFmnnA2vbYcfI6hvMKlM93aF8MhxQQWFgENdcltfYKmwzL0V_oUFU_PdnnOcbm1CiYmrOcswjvtuQyKrJapIJS9Hcrj1f5pt2ilEpQHg"
+
+# # curl -i "http://127.0.0.1:8000/users/me" -H "Authorization: Bearer $TOKEN"
+
+
+
+
+# curl -s "http://127.0.0.1:8000/users/profile" \
+#   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBmNzk0LWVjYTMtNDlkOC05MTQwLWRkNWRjOGZkMmQ2ZiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjYxNzUxMDksImV4cCI6MTc2NjE3NjAwOSwic2NvcGUiOiJ1c2VyIn0.v28fi2NDdS7VZIdQn6V32g6J_r0Gb0Cq96uzV-W9gQ911EgZFfSQdrIQkbE_N5cSo3DZkY7E-XUTUI_knXuJpmkxSIKjmsvBsXEZ3LWh4NRK13Rxi-VA1t2GQ87CuEYnrAQzsLI96VooOviOrGxGq5zucsQBZGjdz9yd6ijuvT9Mx-0Id4DZkNAHQxztQSh2Jn1SiDKIMERiKngHagOSHZ9GrtLbeCfNrBPzaXG2SduNpGb0SGdhweMkimZnEXczPN1VCZ1vDNu_c8frnJF5kSI7eIYqoz6BYYPuOe4RflQZqXYw-A1crGYVpBeYduenBLK5K4m7Kjy7qEKBOgJoqQ" \
+#   -H "Content-Type: application/json" \
+#   -H "Idempotency-Key: abc-123" \
+#   -d '{"name":"dharanesh","city":"nj"}'
+
+# curl -i "http://127.0.0.1:8000/users/profile" \
+#   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBmNzk0LWVjYTMtNDlkOC05MTQwLWRkNWRjOGZkMmQ2ZiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjYxNzUxMDksImV4cCI6MTc2NjE3NjAwOSwic2NvcGUiOiJ1c2VyIn0.v28fi2NDdS7VZIdQn6V32g6J_r0Gb0Cq96uzV-W9gQ911EgZFfSQdrIQkbE_N5cSo3DZkY7E-XUTUI_knXuJpmkxSIKjmsvBsXEZ3LWh4NRK13Rxi-VA1t2GQ87CuEYnrAQzsLI96VooOviOrGxGq5zucsQBZGjdz9yd6ijuvT9Mx-0Id4DZkNAHQxztQSh2Jn1SiDKIMERiKngHagOSHZ9GrtLbeCfNrBPzaXG2SduNpGb0SGdhweMkimZnEXczPN1VCZ1vDNu_c8frnJF5kSI7eIYqoz6BYYPuOe4RflQZqXYw-A1crGYVpBeYduenBLK5K4m7Kjy7qEKBOgJoqQ" \
+#   -H "Content-Type: application/json" \
+#   -H "Idempotency-Key: abc-123" \
+#   -d '{"name":"different"}'
+
+
+# for i in {1..150}; do
+#   echo -n "$i → "
+#   curl -s -o /dev/null -w "%{http_code}\n" \
+#     http://127.0.0.1:8000/users/me \
+#     -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjhhMDBmNzk0LWVjYTMtNDlkOC05MTQwLWRkNWRjOGZkMmQ2ZiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjYxNzgwNjgsImV4cCI6MTc2NjE3ODk2OCwic2NvcGUiOiJ1c2VyIn0.QTxR5A2qlG8ORBySWoQZFfjcMsePTOmPnkcHodt4g39ahcLh6GOUbAEbsu9TNA6L9lXRUREW3icY_D6Pze4BVVsiuhyEXGQ0U7Nabo_YbNpoCGdc9pPZK8V5vP0lCV5T9X51AHDvev200LQi7yAhp8IQu-Jn3ACRlRXwzxt5M_zU0OSrvc2yLbIdLncWmOBC7a0yHkNhY9ceXtxrVwGRH9J3ASG8HdGP1MomWXhS4k4yEezQf5zhUtSQfOOyRVtT9-Vnb2S1Zq7wqCRQyIDdz9FsLmapNd-qU4DLa0TsVAGlrYHnsAoIc6_sM-Pm61j0f5AKt7zRY0p9wQpcWMGsxQ"
+# done
+
+
+# python - <<'PY'
+# import base64, json, os
+# t=os.environ["TOKEN"]
+# h=t.split(".")[0] + "=" * (-len(t.split(".")[0])%4)
+# print(json.loads(base64.urlsafe_b64decode(h)))
+# PY
+
+
+# TOKEN="$TOKEN" python - <<'PY'
+# # script above
+# import base64, json, os
+# t=os.environ["TOKEN"]
+# h=t.split(".")[0] + "=" * (-len(t.split(".")[0])%4)
+# print(json.loads(base64.urlsafe_b64decode(h)))
+# PY
+
+# # uuid = c81aab4c-a453-4cea-a520-c508f16e8351
+# #   mtrics check 
+# #   curl -s http://127.0.0.1:8000/metrics | grep -n "edge_downstream_requests_total" | head
+
+
+#DOCKER COMMANDS
+
+# docker compose up -d --build  - build image and run container
+# docker compose build --no-cache - building image from scratch without cache
+# docker compose down -v - remove all volumes
+# docker system prune -f - remove all unused images
+# docker compose ps -a - list all containers
+# Logs
+# docker compose logs --tail=200 edge -- logs for edge
+# docker compose logs --tail=200 user-mock -- logs for user-mock
+# docker compose logs --tail=200 auth-mock -- logs for auth-mock
+# docker compose logs --tail=200 redis -- logs for redis
+# docker compose exec redis redis-cli -n 0 FLUSHDB -- flush redis db
+
+# docker compose build user-mock --no-cache
+# # docker compose up -d user-mockpostgresql://novacard:novacard@127.0.0.1:5432/novacard
+# docker compose exec -T postgres psql -U novacard -d novacard -f /dev/stdin < c7_1_a_schema.sql -- create schema
+# docker compose exec -T postgres psql -U novacard -d novacard -c "\dt" -- list tables
+
+
+# IDEM=$(python -c "import uuid; print(uuid.uuid4())")
+curl -i http://127.0.0.1:8000/transactions/purchase \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjY3ODgzMjMsImV4cCI6MTc2Njc4OTIyMywic2NvcGUiOiJ1c2VyIn0.MyAx_UN1Aj9eOfC6NHlPe-3xF59oD6G5l7iO3K3eMZc" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: c73-smoke-1" \
+  -d '{"amount_minor": 111, "currency":"USD"}'
+
+  IDEM=$(python -c "import uuid; print(uuid.uuid4())")
+
+curl -i http://127.0.0.1:8005/purchase \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $IDEM" \
+  -d '{"amount_minor": 111, "currency":"USD"}'

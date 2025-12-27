@@ -1,0 +1,17 @@
+C7.2.1 Create account_balance_snapshots table
+
+Requirement: Store last known computed balance for an account.
+Expected result: Balance reads don’t require summing full ledger.
+Approach: New table keyed by account_id, stores:
+	•	balance_minor
+	•	as_of_ledger_entry_id (or as_of_transaction_id)
+	•	updated_at
+
+
+
+    CREATE TABLE IF NOT EXISTS account_balance_snapshots (
+  account_id uuid PRIMARY KEY REFERENCES accounts(account_id),
+  balance_minor bigint NOT NULL DEFAULT 0,
+  as_of_ledger_entry_id uuid NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);

@@ -1,0 +1,21 @@
+C7.2.5 Add drift detection + self-heal job (fail-safe)
+
+Requirement: If snapshot is corrupted, system must detect and rebuild.
+Expected result: You can recover without manual DB surgery.
+Approach:
+	•	Add admin endpoint (or CLI) to rebuild snapshot:
+	•	recompute balance from ledger using full sum
+	•	overwrite snapshot row
+
+Example “rebuild query”:
+UPDATE account_balance_snapshots s
+SET balance_minor = COALESCE(x.balance_minor,0),
+    updated_at = now()
+FROM (
+  SELECT account_id,
+         SUM(CASE WHEN entry_type='DEBIT' THEN -amount_minor ELSE amount_minor END) AS balance_minor
+  FROM ledger_entries
+  WHERE account_id = $1
+  GROUP BY account_id
+) x
+WHERE s.account_id = x.account_id;

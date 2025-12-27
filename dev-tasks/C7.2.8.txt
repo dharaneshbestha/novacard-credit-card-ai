@@ -1,0 +1,27 @@
+Requirement
+
+During purchase atomic flow:
+	•	if snapshot row missing → rebuild it from ledger (authoritative) → continue purchase
+	•	emit metrics so we know it happened
+
+Expected result
+	•	No “snapshot_missing” failures in prod
+	•	Purchase still atomic + safe
+	•	Auditors love it: “self-healing control”
+C7.2.8.B — Lock snapshot for merchant too (optional)
+
+Requirement: prevent merchant/system account races if you track those balances.
+Expected: merchant snapshot consistent with ledger.
+Approach: same INSERT ON CONFLICT DO NOTHING + FOR UPDATE.
+
+C7.2.8.C — Drift rebuild endpoint security
+
+Requirement: /admin/snapshots/* must be protected.
+Expected: only service-auth callers can access.
+Approach: reuse your service-to-service JWT middleware pattern (issuer/audience + replay protection).
+
+C7.2.8.D — Add “rebuild all accounts” job (ops)
+
+Requirement: nightly/adhoc correction job for audit.
+Expected: can rebuild everything deterministically.
+Approach: admin endpoint that iterates accounts in pages; emits metrics per batch.

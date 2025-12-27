@@ -1,0 +1,27 @@
+C7.2.3 Add “incremental update” in the same DB transaction (atomic)
+
+Requirement: When posting ledger entries, snapshot updates must be atomic.
+Expected result: Snapshot never lags ledger for POSTED transactions.
+Approach: In the same SQL transaction where you insert 2 ledger rows:
+	•	lock snapshot row FOR UPDATE
+	•	update balance_minor += delta
+
+Delta rule
+	•	For DEBIT entry: delta = -amount_minor
+	•	For CREDIT entry: delta = +amount_minor
+
+
+Requirement
+
+When we POST a purchase, we must:
+	•	lock user account (FOR UPDATE)
+	•	read snapshot balance (O(1))
+	•	check available credit
+	•	insert 2 ledger rows
+	•	update snapshot balance
+All inside one SQL transaction.
+
+Expected result
+	•	purchases remain fast even with 1M ledger rows
+	•	no race double-spend
+	•	snapshot matches ledger

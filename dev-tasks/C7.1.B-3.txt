@@ -1,0 +1,16 @@
+C7.1.B-3: Account Status Gate
+
+This is small but critical before we touch transactions.
+
+Goal
+Ensure non-ACTIVE accounts cannot be used for purchases.
+
+Where this lives
+	•	Transaction Service logic (not Account Service)
+	•	Account Service remains read-only
+
+Rule
+If accounts.status != 'ACTIVE':
+	•	Reject purchase with deterministic domain error
+	•	No ledger write
+	•	No transaction POSTED

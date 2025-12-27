@@ -1,0 +1,5 @@
+✅ Keep ledger immutable + auditable
+✅ Make “available credit / balance” O(1) or near O(1)
+✅ Prevent drift with DB constraints + locking
+✅ Add fail-safe rebuild mechanism (recompute from ledger)
+

@@ -1,0 +1,112 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: novacard-postgres
+    environment:
+      POSTGRES_USER: novacard
+      POSTGRES_PASSWORD: novacard
+      POSTGRES_DB: novacard
+    ports:
+      - "5432:5432" # change to "5433:5432" if 5432 is busy
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U novacard -d novacard" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    # ports:
+    #   - "6380:6379" # change to 6379:6379 if your host 6379 is free
+    command: [ "redis-server", "--appendonly", "yes" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  auth-mock:
+    build:
+      context: ./novacard-auth-mock
+    expose:
+      - "8001"
+      # ports:
+      #   - "8001:8001"
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001" ]
+
+  user-mock:
+    build:
+      context: ./novacard-user-mock
+    environment:
+      USER_REDIS_URL: "redis://redis:6379/0"
+      USER_SVC_EXPECTED_ISSUER: "novacard-edge"
+      USER_SVC_AUDIENCE: "novacard-user"
+      USER_SVC_KEYS_JSON: '{"k1":"dev_svc_secret_k1","k2":"dev_svc_secret_k2"}'
+      USER_REPLAY_FAIL_OPEN: "false"
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - "8002"
+    # ports:
+    #   - "8002:8002"
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002" ]
+
+  edge:
+    build:
+      context: ./novacard-edge
+    environment:
+      EDGE_AUTH_BASE_URL: "http://auth-mock:8001"
+      EDGE_USER_BASE_URL: "http://user-mock:8002"
+      EDGE_REDIS_URL: "redis://redis:6379/0"
+
+      EDGE_USER_JWT_ISSUER: "novacard-auth"
+      EDGE_USER_JWT_AUDIENCE: "novacard-api"
+      EDGE_USER_JWT_ACTIVE_KID: "k1"
+      EDGE_USER_JWT_KEYS_JSON: '{"k1":"dev_user_jwt_secret_k1"}'
+      EDGE_TXN_BASE_URL: "http://transaction-svc:8005"
+      EDGE_SVC_ISSUER: "novacard-edge"
+      EDGE_SVC_ACTIVE_KID: "k2"
+      EDGE_SVC_KEYS_JSON: '{"k1":"dev_svc_secret_k1","k2":"dev_svc_secret_k2"}'
+      EDGE_SVC_TOKEN_TTL_SECONDS: "60"
+      EDGE_DEV_REUSE_SVC_TOKEN: "false"
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-mock:
+        condition: service_started
+      user-mock:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    command: [ "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000" ]
+
+  account-svc:
+    build:
+      context: ./novacard-account-svc
+    env_file:
+      - ./novacard-account-svc/account.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8004:8004"
+
+  transaction-svc:
+    build:
+      context: ./novacard-transaction-svc
+    env_file:
+      - ./novacard-transaction-svc/transaction.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8005:8005"
+
+volumes:
+  pgdata:

@@ -1,0 +1,17 @@
+docker compose exec -T postgres psql -U novacard -d novacard -f /dev/stdin < c7_1_a_schema.sql       
+docker compose exec -T postgres psql -U novacard -d novacard -f /dev/stdin < c7_1_a_2_constraints.sql
+docker compose exec -T postgres psql -U novacard -d novacard -f /dev/stdin < c7_1_a_345_hardening.sql
+docker compose exec -T postgres psql -U novacard -d novacard -f /dev/stdin < c7_1_a_6_indexes.sql;  
+
+
+
+
+docker compose exec -T postgres psql -U novacard -d novacard -c "
+INSERT INTO accounts (user_id, account_type, currency, status, credit_limit_minor)
+VALUES ('user_123','CREDIT','USD','ACTIVE',500000)
+ON CONFLICT DO NOTHING;"
+
+docker compose exec -T postgres psql -U novacard -d novacard -c "
+INSERT INTO accounts (user_id, account_type, currency, status, credit_limit_minor)
+VALUES ('user_124','CREDIT','USD','ACTIVE',500000)
+ON CONFLICT DO NOTHING;"

@@ -1,0 +1,33 @@
+C7.2.4 Change “available credit check” to use snapshot
+
+
+
+Requirement: No more SUM(...) on every purchase.
+Expected result: Purchase endpoint stays fast even at high ledger volume.
+Approach:
+	•	SELECT balance_minor FROM account_balance_snapshots FOR UPDATE
+	•	compute available = credit_limit_minor + balance_minor
+	•	approve/decline
+	•	insert ledger rows
+	•	update snapshots
+
+
+	C7.2.4 Micro tasks
+
+Requirement
+	•	Balance/available credit must not compute from full ledger in hot path.
+	•	Snapshot must be locked (FOR UPDATE) to prevent race approvals.
+	•	If snapshot missing, fallback to rebuild (fail-safe) OR decline.
+
+Expected Result
+	•	Purchase stays fast with huge ledger.
+	•	Concurrent purchases cannot both approve using stale balance.
+
+Approach
+	•	In purchase flow:
+	•	lock account row (FOR UPDATE)
+	•	ensure snapshot exists and lock it
+	•	compute available credit from snapshot
+	•	post two ledger legs
+	•	update snapshot
+	•	commit

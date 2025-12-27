@@ -1,0 +1,7 @@
+C7.2.7 Add metrics + alerts
+
+Requirement: Detect snapshot rebuild events and drift warnings.
+Expected result: You know when something goes wrong early.
+Approach:
+	•	counter: snapshot_rebuild_total{reason=...}
+	•	gauge: snapshot_last_rebuild_ts

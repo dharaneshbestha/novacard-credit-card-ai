@@ -1,0 +1,15 @@
+	•	Add Ledger Service client (internal call or direct DB write for v1)
+	•	Insert two ledger entries:
+	•	debit user account
+	•	credit system/merchant account
+	•	Wrap ledger insert + transaction update in a single DB transaction
+	•	Update transaction status atomically
+
+We’ll implement C7.1.D-5 (POST money move) like this:
+	•	Purchase creates PENDING txn (already done)
+	•	Then we do an atomic DB Unit-of-Work:
+	1.	SELECT ... FOR UPDATE on the user account row (prevents double-spend)
+	2.	check available credit (v1: compute from ledger sum)
+	3.	insert two ledger rows (debit user, credit merchant/system)
+	4.	update transaction status POSTED
+	•	If anything fails → transaction becomes FAILED (and no ledger rows committed)

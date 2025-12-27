@@ -1,0 +1,21 @@
+Fix idempotency “processing state” correctly
+
+Right now you can still get “in progress” keys hanging or DB-hit behavior. Next we implement the LOCKED → DONE pattern:
+
+Behavior we want
+	1.	First request:
+
+	•	SET NX txn:{user}:{key} = LOCKED
+	•	proceed
+
+	2.	Second request while processing:
+
+	•	sees LOCKED → return 409 idempotency_in_progress (or 202)
+
+	3.	When complete:
+
+	•	overwrite key with final JSON response (DONE) and TTL
+
+	4.	If crash:
+
+	•	LOCKED key expires quickly (short TTL) so it self-heals
