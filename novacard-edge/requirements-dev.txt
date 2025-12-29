@@ -213,7 +213,13 @@ SELECT
 SELECT account_id, user_id, status, currency, credit_limit_minor
             FROM accounts
             WHERE account_id='60c52bfc-72f8-489d-8c84-43a5aba95684' AND user_id='user_123' AND account_type='USER'
+SELECT account_id, entry_type, amount_minor
+FROM ledger_entries
+WHERE transaction_id = '7f161ee2-cf19-4756-bf99-f85e8f19e3db';
 
+SELECT balance_minor
+FROM account_balance_snapshots
+WHERE account_id = '60c52bfc-72f8-489d-8c84-43a5aba95684';
             docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-10"
             docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-6"
             docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-5"

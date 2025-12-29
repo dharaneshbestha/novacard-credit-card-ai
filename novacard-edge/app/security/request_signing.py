@@ -4,7 +4,7 @@ import base64
 import hashlib
 import hmac
 import time
-from typing import Dict, Tuple
+
 
 def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("utf-8")
@@ -22,7 +22,7 @@ def canonical_string(method: str, path: str, query: str, ts: int, body_hash: str
         body_hash,
     ])
 
-def sign_request(method: str, path: str, query: str, body: bytes, secret: str, key_id: str) -> Dict[str, str]:
+def sign_request(method: str, path: str, query: str, body: bytes, secret: str, key_id: str) -> dict[str, str]:
     ts = int(time.time())
     bh = body_sha256_hex(body)
     canon = canonical_string(method, path, query, ts, bh).encode("utf-8")

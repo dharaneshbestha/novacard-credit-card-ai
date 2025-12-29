@@ -10,8 +10,8 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.config import settings
-from app.utils.audit_log import audit_log
 from app.metrics_security import user_security_events_total
+from app.utils.audit_log import audit_log
 
 PUBLIC_PATHS = {"/health", "/metrics"}
 

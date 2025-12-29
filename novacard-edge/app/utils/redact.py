@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Any
 
 SENSITIVE_KEYS = {"ssn", "itin", "dob", "date_of_birth", "address", "password", "token", "refresh_token"}

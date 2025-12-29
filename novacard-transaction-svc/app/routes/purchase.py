@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import traceback
-from typing import Optional
+from contextlib import suppress
 from uuid import UUID, uuid4
 
 import asyncpg
@@ -12,10 +12,10 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.db import get_pool
 from app.services.idempotency import (
-    idem_get_final,
-    idem_try_lock,
-    idem_set_final,
     IdemInProgress,
+    idem_get_final,
+    idem_set_final,
+    idem_try_lock,
 )
 from app.services.ledger_manager import LedgerManager
 
@@ -88,7 +88,7 @@ async def _assert_merchant_account(conn: asyncpg.Connection, merchant_account_id
 async def purchase(
     request: Request,
     payload: PurchaseRequest,
-    idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     pool: asyncpg.Pool = Depends(get_pool),
 ):
     user_id = _get_user_id(request)
@@ -123,10 +123,8 @@ async def purchase(
             "transaction_id": str(transaction_id),
             "reason": f"config_error:bad_merchant_account_id:{type(e).__name__}",
         }
-        try:
+        with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
-        except Exception:
-            pass
         return JSONResponse(resp, status_code=500)
 
     print(f"DEBUG: Looking for Merchant ID purchase.py: {merchant_account_id}")
@@ -136,73 +134,72 @@ async def purchase(
     http_status: int = 500
 
     try:
-        async with pool.acquire() as conn:
-            async with conn.transaction():
-                # Ensure merchant/system account exists and is correct
-                await _assert_merchant_account(conn, merchant_account_id)
+        async with pool.acquire() as conn, conn.transaction():
+            # Ensure merchant/system account exists and is correct
+            await _assert_merchant_account(conn, merchant_account_id)
 
-                user_account_id = await _get_user_account_id(conn, user_id)
+            user_account_id = await _get_user_account_id(conn, user_id)
 
-                # Create transaction row FIRST to satisfy FK from ledger_entries
-                await conn.execute(
-                    """
-                    INSERT INTO transactions (
-                        transaction_id,
-                        user_id,
-                        account_id,
-                        idempotency_key,
-                        txn_type,
-                        currency,
-                        amount_minor,
-                        status
-                    )
-                    VALUES ($1,$2,$3,$4,'PURCHASE',$5,$6,'PENDING')
-                    """,
+            # Create transaction row FIRST to satisfy FK from ledger_entries
+            await conn.execute(
+                """
+                INSERT INTO transactions (
                     transaction_id,
                     user_id,
-                    user_account_id,
-                    idem_key,
-                    payload.currency,
-                    int(payload.amount_minor),
+                    account_id,
+                    idempotency_key,
+                    txn_type,
+                    currency,
+                    amount_minor,
+                    status
                 )
+                VALUES ($1,$2,$3,$4,'PURCHASE',$5,$6,'PENDING')
+                """,
+                transaction_id,
+                user_id,
+                user_account_id,
+                idem_key,
+                payload.currency,
+                int(payload.amount_minor),
+            )
 
-                print(f"DEBUG: Merchant ID insert-purchase.py: {merchant_account_id}")
-                print(f"DEBUG: Type of merchant ID: {type(merchant_account_id)}")
+            print(f"DEBUG: Merchant ID insert-purchase.py: {merchant_account_id}")
+            print(f"DEBUG: Type of merchant ID: {type(merchant_account_id)}")
 
-                lm = LedgerManager(merchant_account_id=merchant_account_id)
+            lm = LedgerManager(merchant_account_id=merchant_account_id)
 
-                result = await lm.post_purchase_atomic(
-                    conn,
-                    transaction_id=transaction_id,
-                    user_id=user_id,
-                    user_account_id=user_account_id,
-                    amount_minor=int(payload.amount_minor),
-                    currency=payload.currency,
-                    idempotency_key=idem_key,
+            result = await lm.post_purchase_atomic(
+                conn,
+                transaction_id=transaction_id,
+                user_id=user_id,
+                user_account_id=user_account_id,
+                amount_minor=int(payload.amount_minor),
+                currency=payload.currency,
+                idempotency_key=idem_key,
+            )
+
+            if not result.ok:
+                await conn.execute(
+                    "UPDATE transactions SET status='DECLINED' WHERE transaction_id=$1",
+                    transaction_id,
                 )
-
-                if not result.ok:
-                    await conn.execute(
-                        "UPDATE transactions SET status='DECLINED' WHERE transaction_id=$1",
-                        transaction_id,
-                    )
-                    resp = {
-                        "status": "DECLINED",
-                        "transaction_id": str(transaction_id),
-                        "reason": result.reason or "declined",
-                    }
-                    http_status = 402
-                else:
-                    await conn.execute(
-                        "UPDATE transactions SET status='POSTED' WHERE transaction_id=$1",
-                        transaction_id,
-                    )
-                    resp = {
-                        "status": "POSTED",
-                        "transaction_id": str(transaction_id),
-                        "reason": "posted",
-                    }
-                    http_status = 200
+                resp = {
+                    "status": "DECLINED",
+                    "transaction_id": str(transaction_id),
+                    "reason": result.reason or "declined",
+                }
+                http_status = 402
+            else:
+                await conn.execute(
+                    "UPDATE transactions SET status='POSTED' WHERE transaction_id=$1",
+                    transaction_id,
+                )
+                resp = {
+                    "status": "POSTED",
+                    "transaction_id": str(transaction_id),
+                    "reason": "posted",
+                }
+                http_status = 200
 
         # DB committed successfully -> now write idempotency final
         await idem_set_final(user_id, idem_key, resp)
@@ -215,10 +212,8 @@ async def purchase(
             "reason": f"http_{e.status_code}:{e.detail}",
         }
         http_status = 500 if e.status_code >= 500 else e.status_code
-        try:
+        with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
-        except Exception:
-            pass
         return JSONResponse(resp, status_code=http_status)
 
     except asyncpg.ForeignKeyViolationError:
@@ -227,10 +222,8 @@ async def purchase(
             "transaction_id": str(transaction_id),
             "reason": "internal_error:ForeignKeyViolationError",
         }
-        try:
+        with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
-        except Exception:
-            pass
         return JSONResponse(resp, status_code=500)
 
     except Exception as e:
@@ -243,8 +236,6 @@ async def purchase(
             "transaction_id": str(transaction_id),
             "reason": f"internal_error:{type(e).__name__}",
         }
-        try:
+        with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
-        except Exception:
-            pass
         return JSONResponse(resp, status_code=500)

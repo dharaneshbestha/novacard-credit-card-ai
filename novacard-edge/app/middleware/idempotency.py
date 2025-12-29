@@ -1,13 +1,13 @@
 import hashlib
 import json
-from typing import Iterable
+from collections.abc import Iterable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response, JSONResponse
+from starlette.responses import JSONResponse, Response
 
-from app.config import settings
 from app.clients.redis_client import get_redis
+from app.config import settings
 from app.utils.redis_guard import require_redis
 
 

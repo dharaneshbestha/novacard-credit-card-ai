@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request
-from starlette.responses import Response, JSONResponse
+from starlette.responses import JSONResponse, Response
 
 from app.clients.downstream import DownstreamClient
+from app.config import settings
 from app.utils.downstream_errors import DownstreamError
 from app.utils.error_mapping import map_downstream_error
-from app.config import settings
 
 router = APIRouter()
 ds = DownstreamClient()

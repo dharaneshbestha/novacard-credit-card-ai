@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import json
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import AnyHttpUrl, Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     # print("[EDGE CONFIG] EDGE_DEV_REUSE_SVC_TOKEN:", settings.EDGE_DEV_REUSE_SVC_TOKEN)

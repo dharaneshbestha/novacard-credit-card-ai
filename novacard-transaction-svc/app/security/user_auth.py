@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from fastapi import HTTPException, Request
 from jose import jwt
-from jose.exceptions import JWTError, ExpiredSignatureError
-from fastapi import Request, HTTPException
+from jose.exceptions import ExpiredSignatureError, JWTError
+
 from app.config import settings
 
 
@@ -35,7 +36,7 @@ async def require_user(request: Request) -> dict:
         request.state.user_id = claims.get("sub")
         return claims
 
-    except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail={"error": "token_expired"})
+    except ExpiredSignatureError as e:
+        raise HTTPException(status_code=401, detail={"error": "token_expired"}) from e
     except JWTError as e:
-        raise HTTPException(status_code=401, detail={"error": "invalid_token", "detail": str(e)})
+        raise HTTPException(status_code=401, detail={"error": "invalid_token", "detail": str(e)}) from e

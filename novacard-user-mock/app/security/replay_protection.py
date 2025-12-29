@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from redis.exceptions import RedisError
+
 from app.clients.redis_client import get_redis
 
 
@@ -25,4 +26,4 @@ async def ensure_not_replayed(jti: str, ttl_seconds: int) -> None:
             raise ReplayError("replayed jti")
 
     except RedisError as e:
-        raise RuntimeError(f"redis_unavailable: {e}")
+        raise RuntimeError(f"redis_unavailable: {e}") from e

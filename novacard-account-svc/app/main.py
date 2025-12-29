@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.db import connect_db, close_db
+
+from app.db import close_db, connect_db
 from app.routes.accounts import router as accounts_router
 
 app = FastAPI(title="NovaCard Account Service", version="0.1.0")

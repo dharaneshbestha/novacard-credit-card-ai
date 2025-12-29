@@ -4,8 +4,8 @@ import json
 from typing import Any
 
 from app.config import settings
-from app.redis_client import get_redis
 from app.metrics import idempotency_total
+from app.redis_client import get_redis
 
 
 class IdemInProgress(Exception):
@@ -27,7 +27,7 @@ async def idem_get_final(user_id: str, idem_key: str) -> dict[str, Any] | None:
         return None
 
     # aioredis can return str (decode_responses=True) or bytes
-    if isinstance(raw, (bytes, bytearray)):
+    if isinstance(raw, bytes | bytearray):
         raw = raw.decode("utf-8", errors="ignore")
 
     raw = raw.strip()

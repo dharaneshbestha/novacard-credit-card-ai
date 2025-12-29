@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Histogram
 
 svc_auth_total = Counter(
     "user_svc_auth_total",

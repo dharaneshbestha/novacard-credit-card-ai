@@ -1,23 +1,18 @@
-from fastapi import FastAPI
-from app.middleware.request_id import RequestIdMiddleware
+import uuid
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from redis.exceptions import RedisError
+
+from app.clients.redis_client import get_redis
+from app.middleware.auth_user_jwt import UserAuthMiddleware
+from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
-from app.middleware.auth import AuthMiddleware
-from app.middleware.idempotency import IdempotencyMiddleware
-
-from app.routing.routes import router as system_router
+from app.middleware.request_id import RequestIdMiddleware
 from app.routing.proxy import router as proxy_router
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from fastapi.responses import Response
-from fastapi.responses import JSONResponse
-from redis.exceptions import RedisError
-from app.clients.redis_client import get_redis
-from app.middleware.idempotency import IdempotencyMiddleware
-from app.middleware.rate_limit import RateLimitMiddleware
-from app.middleware.auth_user_jwt import UserAuthMiddleware
-import uuid
-from fastapi import Request
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from app.routing.routes import router as system_router
 from app.routing.transactions import router as transactions_router
 
 app = FastAPI(title="NovaCard Edge API", version="0.1.0")

@@ -1,8 +1,10 @@
+import uuid
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from jose import jwk
 from jose.constants import Algorithms
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
-import uuid
+
 
 def generate_rsa_keypair():
     private_key = rsa.generate_private_key(

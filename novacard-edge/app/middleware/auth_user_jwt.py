@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from jose import jwt
-from jose.exceptions import JWTError, ExpiredSignatureError
+from jose.exceptions import ExpiredSignatureError, JWTError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from app.utils.audit_log import audit_log
+
 from app.config import settings
+from app.utils.audit_log import audit_log
 
 PUBLIC_PREFIXES = ("/health", "/metrics", "/docs", "/openapi", "/auth")
 

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Header, HTTPException
+
 from app.db import get_pool
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])

@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import time
+
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
-
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.config import settings
 from app.metrics_security import user_security_events_total
-from app.security.replay_protection import ensure_not_replayed, ReplayError
+from app.security.replay_protection import ReplayError, ensure_not_replayed
 from app.utils.audit_log import audit_log
 
 PUBLIC_PATHS = {"/health", "/metrics"}
@@ -149,7 +149,7 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
             ttl = max(1, exp - now)
             try:
                 await ensure_not_replayed(jti, ttl_seconds=ttl)
-            except ReplayError as e:
+            except ReplayError:
                 user_security_events_total.labels(event="service_auth", result="replay_blocked", kid=kid_label).inc()
                 audit_log(
                     service="user",
@@ -158,7 +158,7 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                     path=path,
                     method=method,
                     status_code=401,
-                    detail=f"replayed jti",
+                    detail="replayed jti",
                     extra={"kid": kid_label, "svc": claims.get("svc"), "jti": jti},
                 )
                 return JSONResponse({"error": "replayed_service_token", "kid": kid_label, "svc": claims.get("svc"), "detail": "replayed jti"}, status_code=401)

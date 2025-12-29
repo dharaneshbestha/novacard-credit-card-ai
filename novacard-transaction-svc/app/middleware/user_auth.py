@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from jose import jwt
-from jose.exceptions import JWTError, ExpiredSignatureError
+from jose.exceptions import ExpiredSignatureError, JWTError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse

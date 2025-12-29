@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import asyncpg
 from uuid import UUID
+
+import asyncpg
+
 from app.metrics import snapshot_rebuild_total
 
 

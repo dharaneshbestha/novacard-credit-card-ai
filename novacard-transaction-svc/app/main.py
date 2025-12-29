@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import time
-from fastapi import FastAPI, Request
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
-from app.metrics import http_requests_total, http_latency_seconds, service_up
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+from app.metrics import http_latency_seconds, http_requests_total, service_up
+from app.middleware.user_auth import UserAuthMiddleware
 from app.routes.health import router as health_router
 from app.routes.purchase import router as purchase_router
-from app.middleware.user_auth import UserAuthMiddleware
-from fastapi.responses import Response
 
 app = FastAPI(title="NovaCard Transaction Service", version="0.1.0")
 app.add_middleware(UserAuthMiddleware)

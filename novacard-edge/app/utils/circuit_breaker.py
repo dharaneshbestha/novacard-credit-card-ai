@@ -1,6 +1,7 @@
 import time
 from dataclasses import dataclass
 
+
 @dataclass
 class BreakerState:
     state: str = "CLOSED"          # CLOSED | OPEN | HALF_OPEN

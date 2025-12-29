@@ -1,7 +1,9 @@
 import uuid
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+
 from app.utils.audit_log import audit_log
 
 REQUEST_ID_HEADER = "X-Request-Id"

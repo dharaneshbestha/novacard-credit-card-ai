@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     IDEM_TTL_SECONDS: int = 3600
 
     # Merchant/system account used for CREDIT leg
-    MERCHANT_ACCOUNT_ID: str = "5f8a988e-8b08-4ac4-b6e6-8a286d6f1b4c"
+    MERCHANT_ACCOUNT_ID: str = "35a3b574-44d2-4c19-9bd1-a76508ca346f"
 
     # User JWT validation (dev HS256 path)
     USER_JWT_ISSUER: str = "novacard-auth"

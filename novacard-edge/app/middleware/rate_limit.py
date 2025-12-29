@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import time
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.clients.redis_client import get_redis
-from app.utils.redis_guard import require_redis
 from app.config import settings
+from app.utils.redis_guard import require_redis
 
 
 def _window_key(prefix: str, window_seconds: int) -> str:

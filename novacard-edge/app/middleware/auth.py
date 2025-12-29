@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-from typing import Optional
 
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
@@ -12,7 +11,6 @@ from starlette.responses import JSONResponse
 from app.config import settings
 from app.metrics_security import edge_security_events_total
 from app.utils.audit_log import audit_log
-
 
 # Allow docs/health/metrics and auth routes without user token
 PUBLIC_PREFIXES = (
@@ -96,7 +94,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             if exp and exp < now:
                 raise ExpiredSignatureError("expired")
 
-            user_id: Optional[str] = claims.get("sub")
+            user_id: str | None = claims.get("sub")
             scope = claims.get("scope", "")
             scopes = scope.split() if isinstance(scope, str) else []
 

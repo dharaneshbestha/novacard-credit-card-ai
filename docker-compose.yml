@@ -11,6 +11,7 @@ services:
       - "5432:5432" # change to "5433:5432" if 5432 is busy
     volumes:
       - ./:/work
+      - pgdata:/var/lib/postgresql/data
       # - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U novacard -d novacard" ]
@@ -108,6 +109,15 @@ services:
         condition: service_healthy
     ports:
       - "8005:8005"
+    environment:
+      # DB/Redis (whatever you already have)
+      DATABASE_URL: postgresql://novacard:novacard@postgres:5432/novacard
+      REDIS_URL: redis://redis:6379/0
+      # ---- User JWT verification (MUST MATCH your minting) ----
+      USER_JWT_ISSUER: novacard-auth
+      USER_JWT_AUDIENCE: novacard-api
+      USER_JWT_ACTIVE_KID: k1
+      USER_JWT_KEYS_JSON: '{"k1":"dev_user_jwt_secret_k1"}'
 
   migrate:
     image: postgres:16-alpine

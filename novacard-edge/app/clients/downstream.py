@@ -7,18 +7,16 @@ import hmac
 import random
 import time
 import uuid
-from typing import Dict, Optional
 
 import httpx
 from jose import jwt
 from starlette.requests import Request
 
 from app.config import settings
-from app.metrics import downstream_requests_total, downstream_latency_seconds, set_circuit_state
+from app.metrics import downstream_latency_seconds, downstream_requests_total, set_circuit_state
 from app.metrics_security import edge_security_events_total
 from app.utils.circuit_breaker import CircuitBreaker
 from app.utils.downstream_errors import DownstreamError
-
 
 # ---- retry config ----
 IDEMPOTENT_METHODS = {"GET", "HEAD", "OPTIONS"}
@@ -54,7 +52,7 @@ def _canonical_string(method: str, path: str, query: str, ts: int, body_hash: st
     ]).encode("utf-8")
 
 
-def _sign_request(method: str, path: str, query: str, body: bytes) -> Dict[str, str]:
+def _sign_request(method: str, path: str, query: str, body: bytes) -> dict[str, str]:
     """
     HMAC signing headers required by downstream services (user-mock today).
     Uses EDGE signing secret & key id.

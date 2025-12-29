@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 from uuid import UUID
 
 import asyncpg
@@ -10,7 +9,7 @@ import asyncpg
 @dataclass(frozen=True)
 class PostResult:
     ok: bool
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class LedgerManager:

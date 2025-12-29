@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import redis.asyncio as redis
+
 from app.config import settings
 
 _r: redis.Redis | None = None
