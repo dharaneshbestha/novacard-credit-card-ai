@@ -140,8 +140,8 @@ curl -i "http://127.0.0.1:8000/users/me" \
 # # docker compose up -d user-mockpostgresql://novacard:novacard@127.0.0.1:5432/novacard
 # docker compose exec -T postgres psql -U novacard -d novacard -f /dev/stdin < c7_1_a_schema.sql -- create schema
 # docker compose exec -T postgres psql -U novacard -d novacard -c "\dt" -- list tables
-
-
+docker exec -i novacard-db psql -U novacard -d novacard < db/migrations/0000_schema_migrations.sql
+# psql "$DATABASE_URL" -f db/migrations/0000_schema_migrations.sql
 # IDEM=$(python -c "import uuid; print(uuid.uuid4())")
 curl -i http://127.0.0.1:8000/transactions/purchase \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjY3ODgzMjMsImV4cCI6MTc2Njc4OTIyMywic2NvcGUiOiJ1c2VyIn0.MyAx_UN1Aj9eOfC6NHlPe-3xF59oD6G5l7iO3K3eMZc" \
@@ -156,3 +156,67 @@ curl -i http://127.0.0.1:8005/purchase \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $IDEM" \
   -d '{"amount_minor": 111, "currency":"USD"}'
+
+
+  docker compose exec -T postgres psql -U novacard -d novacard -f /dev/stdin <db/migrations/0000_schema_migrations.sql
+# Run migrations
+for f in db/migrations/*.sql; do
+  echo "APPLY $f"
+  docker run --rm -i \
+    --network "novacard-credit-card-ai_default" \
+    -v "$PWD:/work" \
+    postgres:16-alpine \
+    psql "postgresql://novacard:novacard@postgres:5432/novacard" \
+      -v ON_ERROR_STOP=1 \
+      -f "/work/$f"
+done
+
+
+curl -i http://127.0.0.1:8005/purchase \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjcwMzI2MzIsImV4cCI6MTc2NzAzMzUzMiwic2NvcGUiOiJ1c2VyIn0.y7S1tLIwf8LfZdCwvyKlO2LGkZ2vFQwKtQpBLQs4xl0" \
+  -H "Idempotency-Key: test123" \
+  -H "Content-Type: application/json" \
+  -d '{"amount_minor": 111, "currency":"USD"}'
+
+curl -i http://127.0.0.1:8000/transactions/purchase \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjcwMzczOTgsImV4cCI6MTc2NzAzODI5OCwic2NvcGUiOiJ1c2VyIn0.dq2hzfNtAR3j6OB5s13GKODoKmGjF6d4Dn0-JJVofiY" \
+  -H "Idempotency-Key: edge-test-9" \
+  -H "Content-Type: application/json" \
+  -d '{"amount_minor":111,"currency":"USD"}'
+
+  SELECT
+  (SELECT count(*) FROM transactions WHERE transaction_id = '83f2335a-281d-4ed6-8eb7-431391479c78') AS txn_rows,
+  (SELECT count(*) FROM ledger_entries WHERE transaction_id = '83f2335a-281d-4ed6-8eb7-431391479c78') AS ledger_rows;
+
+
+  cat db/migrations/2025-12-29_01_deferrable_ledger_fk.sql | docker compose exec -T postgres psql -U novacard -d novacard -v ON_ERROR_STOP=1
+
+SELECT account_id
+        FROM accounts
+        WHERE user_id='user_123' AND status='ACTIVE' AND account_type='USER'
+        ORDER BY created_at ASC
+        LIMIT 1
+        # 60c52bfc-72f8-489d-8c84-43a5aba95684 - user_account_id
+
+SELECT
+              a.account_id::text AS account_id,
+              a.user_id,
+              a.credit_limit_minor,
+              s.balance_minor,
+              (a.credit_limit_minor + s.balance_minor) AS available_minor,
+              s.updated_at::text AS snapshot_updated_at
+            FROM accounts a
+            JOIN account_balance_snapshots s ON s.account_id = a.account_id
+            WHERE a.account_id='60c52bfc-72f8-489d-8c84-43a5aba95684' AND a.user_id='user_123'
+            \
+
+SELECT account_id, user_id, status, currency, credit_limit_minor
+            FROM accounts
+            WHERE account_id='60c52bfc-72f8-489d-8c84-43a5aba95684' AND user_id='user_123' AND account_type='USER'
+
+            docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-10"
+            docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-6"
+            docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-5"
+            docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-9"
+            docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-3"
+            docker compose exec -T redis redis-cli DEL "txn:final:user_123:edge-test-4"

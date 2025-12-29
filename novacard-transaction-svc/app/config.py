@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     IDEM_TTL_SECONDS: int = 3600
 
     # Merchant/system account used for CREDIT leg
-    MERCHANT_ACCOUNT_ID: str = "3bdb55cd-a934-4c92-890d-d3e2e1a14fdc"
+    MERCHANT_ACCOUNT_ID: str = "5f8a988e-8b08-4ac4-b6e6-8a286d6f1b4c"
 
     # User JWT validation (dev HS256 path)
     USER_JWT_ISSUER: str = "novacard-auth"
@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     USER_JWT_KEYS_JSON: str = '{"k1":"dev_user_jwt_secret_k1"}'
     USER_JWT_KEYS: dict[str, str] = Field(default_factory=dict)
     USER_JWT_ACTIVE_KID: str = "k1"
+
+    @field_validator("MERCHANT_ACCOUNT_ID", mode="before")
+    @classmethod
+    def clean_uuid(cls, v):
+        if isinstance(v, str):
+            # This strips quotes and spaces automatically
+            return v.strip().replace('"', '').replace("'", "")
+            print(v)
+        return v
 
     @field_validator("USER_JWT_KEYS", mode="before")
     @classmethod

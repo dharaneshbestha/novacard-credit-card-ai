@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import traceback
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -9,14 +10,14 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.db import get_pool  # adjust if needed
+from app.db import get_pool
 from app.services.idempotency import (
     idem_get_final,
     idem_try_lock,
     idem_set_final,
     IdemInProgress,
 )
-from app.services.ledger_manager import LedgerManager, PostResult  # adjust if needed
+from app.services.ledger_manager import LedgerManager
 
 router = APIRouter(prefix="/purchase", tags=["purchase"])
 
@@ -32,19 +33,30 @@ class PurchaseResponse(BaseModel):
     reason: str
 
 
+def _as_uuid(x) -> UUID:
+    """Accept UUID or UUID-like string and return UUID."""
+    if isinstance(x, UUID):
+        return x
+    return UUID(str(x))
+
+
 def _get_user_id(request: Request) -> str:
     user_id = getattr(request.state, "user_id", None)
+    print("user_id =", user_id)
     if not user_id:
         raise HTTPException(status_code=401, detail="missing_user_context")
     return str(user_id)
 
 
 async def _get_user_account_id(conn: asyncpg.Connection, user_id: str) -> UUID:
+    print(f"DEBUG: Looking for User ID: {user_id}")
+    print(f"DEBUG: Type of ID: {type(user_id)}")
+
     row = await conn.fetchrow(
         """
         SELECT account_id
         FROM accounts
-        WHERE user_id=$1 AND status='ACTIVE'
+        WHERE user_id=$1 AND status='ACTIVE' AND account_type='USER'
         ORDER BY created_at ASC
         LIMIT 1
         """,
@@ -52,7 +64,24 @@ async def _get_user_account_id(conn: asyncpg.Connection, user_id: str) -> UUID:
     )
     if not row:
         raise HTTPException(status_code=404, detail="account_not_found")
-    return UUID(str(row["account_id"]))
+    return _as_uuid(row["account_id"])
+
+
+async def _assert_merchant_account(conn: asyncpg.Connection, merchant_account_id: UUID) -> None:
+    row = await conn.fetchrow(
+        """
+        SELECT account_id, account_type, status, currency
+        FROM accounts
+        WHERE account_id=$1
+        """,
+        merchant_account_id,
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="merchant_account_missing")
+    if row["account_type"] != "MERCHANT":
+        raise HTTPException(status_code=500, detail="merchant_account_wrong_type")
+    if row["status"] != "ACTIVE":
+        raise HTTPException(status_code=500, detail="merchant_account_inactive")
 
 
 @router.post("", response_model=PurchaseResponse)
@@ -62,25 +91,18 @@ async def purchase(
     idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
     pool: asyncpg.Pool = Depends(get_pool),
 ):
-    """
-    POST /purchase
-    Requires:
-      - request.state.user_id set by UserAuth middleware
-      - Idempotency-Key header
-    """
-
     user_id = _get_user_id(request)
 
     idem_key = (idempotency_key or "").strip()
     if not idem_key:
         raise HTTPException(status_code=400, detail="missing_idempotency_key")
 
-    # 1) Return final if exists
+    # 1) Final cache hit (fast path)
     cached = await idem_get_final(user_id, idem_key)
     if cached:
         return JSONResponse(cached, status_code=200)
 
-    # 2) Acquire in-progress lock (NX). If fails -> 409
+    # 2) Acquire idempotency lock
     try:
         await idem_try_lock(user_id, idem_key)
     except IdemInProgress:
@@ -89,15 +111,39 @@ async def purchase(
             status_code=409,
         )
 
-    # 3) Perform atomic DB work
     transaction_id = uuid4()
+
+    # ✅ Convert merchant ID ONCE to UUID
+    try:
+        merchant_account_id = _as_uuid(settings.MERCHANT_ACCOUNT_ID)
+    except Exception as e:
+        # This is a config error, fail fast and release idem lock via final
+        resp = {
+            "status": "FAILED",
+            "transaction_id": str(transaction_id),
+            "reason": f"config_error:bad_merchant_account_id:{type(e).__name__}",
+        }
+        try:
+            await idem_set_final(user_id, idem_key, resp)
+        except Exception:
+            pass
+        return JSONResponse(resp, status_code=500)
+
+    print(f"DEBUG: Looking for Merchant ID purchase.py: {merchant_account_id}")
+    print(f"DEBUG: Type of ID: {type(merchant_account_id)}")
+
+    resp: dict = {}
+    http_status: int = 500
 
     try:
         async with pool.acquire() as conn:
             async with conn.transaction():
+                # Ensure merchant/system account exists and is correct
+                await _assert_merchant_account(conn, merchant_account_id)
+
                 user_account_id = await _get_user_account_id(conn, user_id)
 
-                # ✅ Insert transaction row FIRST (satisfies FK for ledger_entries)
+                # Create transaction row FIRST to satisfy FK from ledger_entries
                 await conn.execute(
                     """
                     INSERT INTO transactions (
@@ -110,59 +156,88 @@ async def purchase(
                         amount_minor,
                         status
                     )
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,'PENDING')
+                    VALUES ($1,$2,$3,$4,'PURCHASE',$5,$6,'PENDING')
                     """,
                     transaction_id,
                     user_id,
                     user_account_id,
                     idem_key,
-                    "PURCHASE",
                     payload.currency,
                     int(payload.amount_minor),
                 )
 
-                lm = LedgerManager(merchant_account_id=UUID(str(settings.MERCHANT_ACCOUNT_ID)))
+                print(f"DEBUG: Merchant ID insert-purchase.py: {merchant_account_id}")
+                print(f"DEBUG: Type of merchant ID: {type(merchant_account_id)}")
 
-                result: PostResult = await lm.post_purchase_atomic(
+                lm = LedgerManager(merchant_account_id=merchant_account_id)
+
+                result = await lm.post_purchase_atomic(
                     conn,
                     transaction_id=transaction_id,
                     user_id=user_id,
                     user_account_id=user_account_id,
                     amount_minor=int(payload.amount_minor),
                     currency=payload.currency,
+                    idempotency_key=idem_key,
                 )
 
                 if not result.ok:
-                    # Mark FAILED/DECLINED (still inside same DB transaction)
                     await conn.execute(
                         "UPDATE transactions SET status='DECLINED' WHERE transaction_id=$1",
                         transaction_id,
                     )
-
                     resp = {
                         "status": "DECLINED",
                         "transaction_id": str(transaction_id),
                         "reason": result.reason or "declined",
                     }
-                    await idem_set_final(user_id, idem_key, resp)
-                    return JSONResponse(resp, status_code=402)
+                    http_status = 402
+                else:
+                    await conn.execute(
+                        "UPDATE transactions SET status='POSTED' WHERE transaction_id=$1",
+                        transaction_id,
+                    )
+                    resp = {
+                        "status": "POSTED",
+                        "transaction_id": str(transaction_id),
+                        "reason": "posted",
+                    }
+                    http_status = 200
 
-                # Success -> POSTED
-                await conn.execute(
-                    "UPDATE transactions SET status='POSTED' WHERE transaction_id=$1",
-                    transaction_id,
-                )
+        # DB committed successfully -> now write idempotency final
+        await idem_set_final(user_id, idem_key, resp)
+        return JSONResponse(resp, status_code=http_status)
 
-                resp = {
-                    "status": "POSTED",
-                    "transaction_id": str(transaction_id),
-                    "reason": "posted",
-                }
-                await idem_set_final(user_id, idem_key, resp)
-                return JSONResponse(resp, status_code=200)
+    except HTTPException as e:
+        resp = {
+            "status": "FAILED",
+            "transaction_id": str(transaction_id),
+            "reason": f"http_{e.status_code}:{e.detail}",
+        }
+        http_status = 500 if e.status_code >= 500 else e.status_code
+        try:
+            await idem_set_final(user_id, idem_key, resp)
+        except Exception:
+            pass
+        return JSONResponse(resp, status_code=http_status)
+
+    except asyncpg.ForeignKeyViolationError:
+        resp = {
+            "status": "FAILED",
+            "transaction_id": str(transaction_id),
+            "reason": "internal_error:ForeignKeyViolationError",
+        }
+        try:
+            await idem_set_final(user_id, idem_key, resp)
+        except Exception:
+            pass
+        return JSONResponse(resp, status_code=500)
 
     except Exception as e:
-        # IMPORTANT: fail-safe final response so callers don't get stuck in 409 forever
+        # ✅ print the traceback so you can see the real bug next time
+        print("PURCHASE FAILED:", repr(e))
+        print(traceback.format_exc())
+
         resp = {
             "status": "FAILED",
             "transaction_id": str(transaction_id),
@@ -171,6 +246,5 @@ async def purchase(
         try:
             await idem_set_final(user_id, idem_key, resp)
         except Exception:
-            # If Redis is down too, still return a deterministic failure
             pass
         return JSONResponse(resp, status_code=500)
