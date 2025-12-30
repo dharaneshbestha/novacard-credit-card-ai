@@ -29,12 +29,12 @@ def audit_log(
     if path:
         payload["path"] = path
     if method:
-         payload["method"] = method
+        payload["method"] = method
     if status_code is not None:
         payload["status_code"] = status_code
-    if detail: 
+    if detail:
         payload["detail"] = detail
     if extra:
-         payload.update(extra)
+        payload.update(extra)
 
     print(json.dumps(payload, separators=(",", ":"), sort_keys=False))

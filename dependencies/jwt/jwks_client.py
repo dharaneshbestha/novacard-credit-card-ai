@@ -2,7 +2,7 @@ import json
 import urllib.request
 from functools import lru_cache
 from ssl import SSLContext
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.error import URLError
 
 from .api_jwk import PyJWK, PyJWKSet
@@ -19,14 +19,14 @@ class PyJWKClient:
         max_cached_keys: int = 16,
         cache_jwk_set: bool = True,
         lifespan: int = 300,
-        headers: Optional[Dict[str, Any]] = None,
+        headers: dict[str, Any] | None = None,
         timeout: int = 30,
-        ssl_context: Optional[SSLContext] = None,
+        ssl_context: SSLContext | None = None,
     ):
         if headers is None:
             headers = {}
         self.uri = uri
-        self.jwk_set_cache: Optional[JWKSetCache] = None
+        self.jwk_set_cache: JWKSetCache | None = None
         self.headers = headers
         self.timeout = timeout
         self.ssl_context = ssl_context
@@ -35,9 +35,7 @@ class PyJWKClient:
             # Init jwt set cache with default or given lifespan.
             # Default lifespan is 300 seconds (5 minutes).
             if lifespan <= 0:
-                raise PyJWKClientError(
-                    f'Lifespan must be greater than 0, the input is "{lifespan}"'
-                )
+                raise PyJWKClientError(f'Lifespan must be greater than 0, the input is "{lifespan}"')
             self.jwk_set_cache = JWKSetCache(lifespan)
         else:
             self.jwk_set_cache = None
@@ -45,22 +43,16 @@ class PyJWKClient:
         if cache_keys:
             # Cache signing keys
             # Ignore mypy (https://github.com/python/mypy/issues/2427)
-            self.get_signing_key = lru_cache(maxsize=max_cached_keys)(
-                self.get_signing_key
-            )  # type: ignore
+            self.get_signing_key = lru_cache(maxsize=max_cached_keys)(self.get_signing_key)  # type: ignore
 
     def fetch_data(self) -> Any:
         jwk_set: Any = None
         try:
             r = urllib.request.Request(url=self.uri, headers=self.headers)
-            with urllib.request.urlopen(
-                r, timeout=self.timeout, context=self.ssl_context
-            ) as response:
+            with urllib.request.urlopen(r, timeout=self.timeout, context=self.ssl_context) as response:
                 jwk_set = json.load(response)
         except (URLError, TimeoutError) as e:
-            raise PyJWKClientConnectionError(
-                f'Fail to fetch data from the url, err: "{e}"'
-            ) from e
+            raise PyJWKClientConnectionError(f'Fail to fetch data from the url, err: "{e}"') from e
         else:
             return jwk_set
         finally:
@@ -80,7 +72,7 @@ class PyJWKClient:
 
         return PyJWKSet.from_dict(data)
 
-    def get_signing_keys(self, refresh: bool = False) -> List[PyJWK]:
+    def get_signing_keys(self, refresh: bool = False) -> list[PyJWK]:
         jwk_set = self.get_jwk_set(refresh)
         signing_keys = [
             jwk_set_key
@@ -103,9 +95,7 @@ class PyJWKClient:
             signing_key = self.match_kid(signing_keys, kid)
 
             if not signing_key:
-                raise PyJWKClientError(
-                    f'Unable to find a signing key that matches: "{kid}"'
-                )
+                raise PyJWKClientError(f'Unable to find a signing key that matches: "{kid}"')
 
         return signing_key
 
@@ -115,7 +105,7 @@ class PyJWKClient:
         return self.get_signing_key(header.get("kid"))
 
     @staticmethod
-    def match_kid(signing_keys: List[PyJWK], kid: str) -> Optional[PyJWK]:
+    def match_kid(signing_keys: list[PyJWK], kid: str) -> PyJWK | None:
         signing_key = None
 
         for key in signing_keys:

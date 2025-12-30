@@ -46,7 +46,9 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
             kid = header.get("kid")
             kid_label = str(kid or "none")
             if not kid:
-                user_security_events_total.labels(event="service_auth", result="missing_kid", kid="none").inc()
+                user_security_events_total.labels(
+                    event="service_auth", result="missing_kid", kid="none"
+                ).inc()
                 audit_log(
                     service="user",
                     event="service_auth_failed",
@@ -60,7 +62,9 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
 
             secret = settings.SVC_KEYS.get(kid)
             if not secret:
-                user_security_events_total.labels(event="service_auth", result="unknown_kid", kid=kid_label).inc()
+                user_security_events_total.labels(
+                    event="service_auth", result="unknown_kid", kid=kid_label
+                ).inc()
                 audit_log(
                     service="user",
                     event="service_auth_failed",
@@ -71,7 +75,9 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                     detail=f"unknown_kid={kid}",
                     extra={"known_kids": list(settings.SVC_KEYS.keys())},
                 )
-                return JSONResponse({"error": "invalid_service_token", "detail": f"unknown_kid={kid}"}, status_code=401)
+                return JSONResponse(
+                    {"error": "invalid_service_token", "detail": f"unknown_kid={kid}"}, status_code=401
+                )
 
             claims = jwt.decode(
                 token,
@@ -103,7 +109,9 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                 return JSONResponse({"error": "service_token_expired"}, status_code=401)
 
             if iat > now + SKEW:
-                user_security_events_total.labels(event="service_auth", result="iat_in_future", kid=kid_label).inc()
+                user_security_events_total.labels(
+                    event="service_auth", result="iat_in_future", kid=kid_label
+                ).inc()
                 audit_log(
                     service="user",
                     event="service_auth_failed",
@@ -117,7 +125,9 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                 return JSONResponse({"error": "service_token_iat_in_future"}, status_code=401)
 
             if not claims.get("svc"):
-                user_security_events_total.labels(event="service_auth", result="missing_svc_claim", kid=kid_label).inc()
+                user_security_events_total.labels(
+                    event="service_auth", result="missing_svc_claim", kid=kid_label
+                ).inc()
                 audit_log(
                     service="user",
                     event="service_auth_failed",
@@ -128,12 +138,16 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                     detail="missing_svc_claim",
                     extra={"kid": kid_label},
                 )
-                return JSONResponse({"error": "invalid_service_token", "detail": "missing svc claim"}, status_code=401)
+                return JSONResponse(
+                    {"error": "invalid_service_token", "detail": "missing svc claim"}, status_code=401
+                )
 
             # Replay protection (fail closed if unavailable)
             jti = claims.get("jti")
             if not jti:
-                user_security_events_total.labels(event="service_auth", result="missing_jti", kid=kid_label).inc()
+                user_security_events_total.labels(
+                    event="service_auth", result="missing_jti", kid=kid_label
+                ).inc()
                 audit_log(
                     service="user",
                     event="service_auth_failed",
@@ -144,13 +158,17 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                     detail="missing_jti",
                     extra={"kid": kid_label},
                 )
-                return JSONResponse({"error": "invalid_service_token", "detail": "missing jti"}, status_code=401)
+                return JSONResponse(
+                    {"error": "invalid_service_token", "detail": "missing jti"}, status_code=401
+                )
 
             ttl = max(1, exp - now)
             try:
                 await ensure_not_replayed(jti, ttl_seconds=ttl)
             except ReplayError:
-                user_security_events_total.labels(event="service_auth", result="replay_blocked", kid=kid_label).inc()
+                user_security_events_total.labels(
+                    event="service_auth", result="replay_blocked", kid=kid_label
+                ).inc()
                 audit_log(
                     service="user",
                     event="service_token_replay_blocked",
@@ -161,9 +179,19 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                     detail="replayed jti",
                     extra={"kid": kid_label, "svc": claims.get("svc"), "jti": jti},
                 )
-                return JSONResponse({"error": "replayed_service_token", "kid": kid_label, "svc": claims.get("svc"), "detail": "replayed jti"}, status_code=401)
+                return JSONResponse(
+                    {
+                        "error": "replayed_service_token",
+                        "kid": kid_label,
+                        "svc": claims.get("svc"),
+                        "detail": "replayed jti",
+                    },
+                    status_code=401,
+                )
             except Exception as e:
-                user_security_events_total.labels(event="service_auth", result="replay_unavailable", kid=kid_label).inc()
+                user_security_events_total.labels(
+                    event="service_auth", result="replay_unavailable", kid=kid_label
+                ).inc()
                 audit_log(
                     service="user",
                     event="replay_protection_unavailable",
@@ -174,7 +202,9 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
                     detail=str(e),
                     extra={"kid": kid_label},
                 )
-                return JSONResponse({"error": "replay_protection_unavailable", "detail": str(e)}, status_code=503)
+                return JSONResponse(
+                    {"error": "replay_protection_unavailable", "detail": str(e)}, status_code=503
+                )
 
             # ✅ Only after replay passes: mark success
             user_security_events_total.labels(event="service_auth", result="success", kid=kid_label).inc()
@@ -212,7 +242,9 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
             except Exception:
                 pass
 
-            user_security_events_total.labels(event="service_auth", result="invalid_token", kid=kid_label).inc()
+            user_security_events_total.labels(
+                event="service_auth", result="invalid_token", kid=kid_label
+            ).inc()
             audit_log(
                 service="user",
                 event="service_auth_failed",

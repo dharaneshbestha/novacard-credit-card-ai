@@ -8,6 +8,7 @@ from app.utils.audit_log import audit_log
 
 REQUEST_ID_HEADER = "X-Request-Id"
 
+
 class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         rid = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
@@ -15,7 +16,7 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
         audit_log(
             service="edge",
             event="request_start",
-            request_id=request.state.request_id,
+            request_id=rid,
             path=str(request.url.path),
             method=request.method,
         )

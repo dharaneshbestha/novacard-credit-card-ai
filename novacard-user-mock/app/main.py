@@ -17,9 +17,11 @@ app = FastAPI(title="NovaCard User Mock")
 app.add_middleware(RequestSigningMiddleware)
 app.add_middleware(ServiceAuthMiddleware)
 
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
 
 @app.get("/users/me")
 async def me(request: Request):
@@ -33,6 +35,7 @@ async def me(request: Request):
         "profile": {"first_name": "Test", "last_name": "User", "country": "US", "state": "NJ"},
     }
 
+
 @app.get("/users/sleep")
 async def sleep(seconds: int = 6):
     await asyncio.sleep(seconds)
@@ -42,6 +45,7 @@ async def sleep(seconds: int = 6):
 @app.get("/metrics")
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 @app.post("/users/profile")
 async def update_profile(payload: Annotated[dict, Body(...)]):

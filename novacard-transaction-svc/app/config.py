@@ -28,12 +28,16 @@ class Settings(BaseSettings):
     USER_JWT_KEYS: dict[str, str] = Field(default_factory=dict)
     USER_JWT_ACTIVE_KID: str = "k1"
 
+    SVC_ISSUER: str = "novacard-edge"
+    SVC_AUDIENCE: str = "novacard-transaction"
+    SVC_KEYS_JSON: str = '{"k1":"dev_svc_secret_k1","k2":"dev_svc_secret_k2"}'
+
     @field_validator("MERCHANT_ACCOUNT_ID", mode="before")
     @classmethod
     def clean_uuid(cls, v):
         if isinstance(v, str):
             # This strips quotes and spaces automatically
-            return v.strip().replace('"', '').replace("'", "")
+            return v.strip().replace('"', "").replace("'", "")
             print(v)
         return v
 

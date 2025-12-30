@@ -77,7 +77,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     status_code=401,
                     detail=f"unknown_kid={kid}",
                 )
-                return JSONResponse({"error": "invalid_token", "detail": f"unknown_kid={kid}"}, status_code=401)
+                return JSONResponse(
+                    {"error": "invalid_token", "detail": f"unknown_kid={kid}"}, status_code=401
+                )
 
             claims = jwt.decode(
                 token,

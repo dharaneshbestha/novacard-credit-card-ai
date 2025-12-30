@@ -1,12 +1,14 @@
 import os
-import pytest
+
 import httpx
+import pytest
 
 pytestmark = pytest.mark.integration
 
 EDGE_BASE = os.getenv("EDGE_BASE", "http://127.0.0.1:8000")
-TXN_BASE  = os.getenv("TXN_BASE",  "http://127.0.0.1:8005")
+TXN_BASE = os.getenv("TXN_BASE", "http://127.0.0.1:8005")
 ACCT_BASE = os.getenv("ACCT_BASE", "http://127.0.0.1:8004")
+
 
 @pytest.mark.asyncio
 async def test_health_endpoints():

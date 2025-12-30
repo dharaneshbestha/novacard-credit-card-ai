@@ -1,0 +1,142 @@
+D3.1 Standardize structured logs across services
+
+What to implement (all services: edge, transaction-svc, account-svc, user-mock, auth-mock)
+	•	Every request log includes:
+	•	ts, service, event, request_id, path, method, status_code, latency_ms
+	•	Errors include:
+	•	error_type, detail, downstream (if any)
+
+Minimal approach
+	•	Ensure request-id middleware is enabled everywhere:
+	•	If header missing: generate UUID
+	•	Always echo: X-Request-Id response header
+	•	Add a single request logging middleware (start/end timer).
+
+Expected result
+	•	One line at request start + one line at end, consistent JSON.
+
+⸻
+
+D3.2 Prometheus metrics you must have (per service)
+
+Transaction Service (most important)
+
+Add/verify these exist in /metrics:
+
+Request layer
+	•	txn_http_requests_total{path,method,status}
+	•	txn_http_latency_seconds_bucket{path,method,...}
+
+Idempotency
+	•	txn_idempotency_total{result}
+	•	lock_acquired, in_progress, final_cache_hit, final_written, final_corrupt_*
+
+Ledger correctness
+	•	txn_ledger_post_total{result,reason}
+	•	posted, declined, failed
+	•	Snapshot drift & rebuild (you already started these):
+	•	txn_snapshot_drift_detected_total{service,reason}
+	•	txn_snapshot_rebuild_total{service,reason}
+	•	txn_snapshot_rebuild_latency_seconds_bucket{service,...}
+
+DB / dependency health
+	•	txn_dependency_up{dep="postgres"} Gauge
+	•	txn_dependency_up{dep="redis"} Gauge
+
+Expected result
+	•	After a purchase, you see counters move.
+	•	If you force drift, drift counter increments.
+
+Edge service
+	•	edge_http_requests_total{path,method,status}
+	•	edge_downstream_requests_total{service,result}
+	•	edge_downstream_latency_seconds_bucket{service,...}
+	•	edge_security_events_total{event,result,kid} (auth success/fail, replay, signature fail)
+
+⸻
+
+D3.3 Invariants: a “ledger self-check” endpoint (admin-only)
+
+We add one admin endpoint in transaction-svc:
+
+GET /admin/invariants
+
+Checks:
+	1.	Double-entry: every transaction_id has exactly 2 ledger rows (index 0 debit, index 1 credit)
+	2.	Zero-sum: sum(debits) + sum(credits) == 0 per transaction_id
+	3.	Snapshot drift: snapshot balance matches SUM(ledger) for each account (or sampled)
+
+Returns JSON like:
+{
+  "ok": true,
+  "checked_transactions": 100,
+  "violations": []
+}
+
+Security
+	•	Protected via service JWT (your svc token) OR admin user scope.
+	•	If token missing: 401 (you already hit that earlier).
+
+Expected result
+	•	You can run this in Docker and it returns ok.
+	•	If you intentionally break something, it reports violations and increments a metric:
+	•	txn_invariant_violations_total{type}
+
+⸻
+
+D3.4 Docker smoke tests (one command)
+
+Add a script: scripts/dev_smoke.sh that:
+	1.	docker compose up -d --build
+	2.	run migrations/reset if needed
+	3.	mint user jwt
+	4.	hit:
+	•	/health on edge/txn/account
+	•	a purchase via edge and directly txn
+	•	/admin/invariants with svc token
+	5.	prints pass/fail summary
+
+Expected result
+	•	One command tells you “green” with no guessing.
+
+⸻
+
+D3.5 Quick checklist to execute D3 (in order)
+	1.	✅ Add request-id + structured logging middleware to txn + edge (others optional but good)
+	2.	✅ Add missing metrics counters/gauges (txn + edge)
+	3.	✅ Implement /admin/invariants (txn)
+	4.	✅ Add scripts/dev_smoke.sh
+	5.	✅ Run full docker smoke and confirm metrics show incrementsSecurity
+	•	Protected via service JWT (your svc token) OR admin user scope.
+	•	If token missing: 401 (you already hit that earlier).
+
+Expected result
+	•	You can run this in Docker and it returns ok.
+	•	If you intentionally break something, it reports violations and increments a metric:
+	•	txn_invariant_violations_total{type}
+
+⸻
+
+D3.4 Docker smoke tests (one command)
+
+Add a script: scripts/dev_smoke.sh that:
+	1.	docker compose up -d --build
+	2.	run migrations/reset if needed
+	3.	mint user jwt
+	4.	hit:
+	•	/health on edge/txn/account
+	•	a purchase via edge and directly txn
+	•	/admin/invariants with svc token
+	5.	prints pass/fail summary
+
+Expected result
+	•	One command tells you “green” with no guessing.
+
+⸻
+
+D3.5 Quick checklist to execute D3 (in order)
+	1.	✅ Add request-id + structured logging middleware to txn + edge (others optional but good)
+	2.	✅ Add missing metrics counters/gauges (txn + edge)
+	3.	✅ Implement /admin/invariants (txn)
+	4.	✅ Add scripts/dev_smoke.sh
+	5.	✅ Run full docker smoke and confirm metrics show increments

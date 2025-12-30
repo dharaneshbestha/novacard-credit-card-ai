@@ -23,7 +23,9 @@ async def require_user(request: Request) -> dict:
         kid = header.get("kid") or settings.USER_JWT_ACTIVE_KID
         secret = settings.USER_JWT_KEYS.get(kid)
         if not secret:
-            raise HTTPException(status_code=401, detail={"error": "invalid_token", "detail": f"unknown_kid={kid}"})
+            raise HTTPException(
+                status_code=401, detail={"error": "invalid_token", "detail": f"unknown_kid={kid}"}
+            )
 
         claims = jwt.decode(
             token,

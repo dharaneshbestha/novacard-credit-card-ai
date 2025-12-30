@@ -10,10 +10,19 @@ router = APIRouter()
 ds = DownstreamClient()
 
 HOP_BY_HOP = {
-    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
-    "te", "trailer", "transfer-encoding", "upgrade",
-    "server", "date", "content-length",
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+    "server",
+    "date",
+    "content-length",
 }
+
 
 def safe_headers(h: dict) -> dict:
     out = {}
@@ -23,6 +32,7 @@ def safe_headers(h: dict) -> dict:
             continue
         out[k] = v
     return out
+
 
 def map_downstream_error(e: DownstreamError) -> JSONResponse:
     status_map = {
@@ -49,6 +59,7 @@ def map_downstream_error(e: DownstreamError) -> JSONResponse:
         status_code=status,
         headers=headers,
     )
+
 
 @router.api_route("/auth/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def proxy_auth(request: Request, path: str):
@@ -92,7 +103,10 @@ async def proxy_users(request: Request, path: str):
 
 
 @router.api_route("/kyc/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
-async def proxy_kyc(request: Request, path: str, ):
+async def proxy_kyc(
+    request: Request,
+    path: str,
+):
     try:
         r = await ds.forward(request, str(settings.KYC_BASE_URL), audience="novacard-kyc")
         return Response(content=r.content, status_code=r.status_code, headers=safe_headers(dict(r.headers)))
@@ -118,4 +132,6 @@ async def proxy_accounts(request: Request, path: str):
     except DownstreamError as e:
         return map_downstream_error(e)
     except Exception as e:
-        return JSONResponse({"error": "downstream_unavailable", "service": "account", "detail": str(e)}, status_code=503)
+        return JSONResponse(
+            {"error": "downstream_unavailable", "service": "account", "detail": str(e)}, status_code=503
+        )

@@ -1,0 +1,7 @@
+“Audit readiness” toggle (optional but recommended)
+
+Later we’ll add:
+	•	LOG_INCLUDE_HEADERS=false in prod (headers off entirely)
+	•	body redaction hook if you ever log request bodies
+
+⸻

@@ -118,6 +118,9 @@ services:
       USER_JWT_AUDIENCE: novacard-api
       USER_JWT_ACTIVE_KID: k1
       USER_JWT_KEYS_JSON: '{"k1":"dev_user_jwt_secret_k1"}'
+      SVC_ISSUER: "novacard-edge"
+      SVC_AUDIENCE: "novacard-transaction"
+      SVC_KEYS_JSON: '{"k1":"dev_svc_secret_k1","k2":"dev_svc_secret_k2"}'
 
   migrate:
     image: postgres:16-alpine
@@ -127,9 +130,9 @@ services:
     environment:
       DATABASE_URL: postgresql://novacard:novacard@postgres:5432/novacard
     volumes:
-      - ./db/migrations:/migrations:ro
+      - ./db:/db:ro
       - ./scripts:/scripts:ro
-    entrypoint: [ "sh", "-lc", "apk add --no-cache bash && DATABASE_URL=$DATABASE_URL bash /scripts/migrate.sh" ]
+    entrypoint: [ "sh", "-lc", "apk add --no-cache bash >/dev/null && bash /scripts/migrate.sh" ]
 
 volumes:
   pgdata:

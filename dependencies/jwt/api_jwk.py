@@ -56,9 +56,7 @@ class PyJWK:
                 raise InvalidKeyError(f"Unsupported kty: {kty}")
 
         if not has_crypto and algorithm in requires_cryptography:
-            raise MissingCryptographyError(
-                f"{algorithm} requires 'cryptography' to be installed."
-            )
+            raise MissingCryptographyError(f"{algorithm} requires 'cryptography' to be installed.")
 
         self.algorithm_name = algorithm
 

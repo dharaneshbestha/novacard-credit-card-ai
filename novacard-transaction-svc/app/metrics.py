@@ -1,24 +1,3 @@
-# from prometheus_client import Counter, Histogram
-
-# # Drift detection
-# snapshot_drift_detected_total = Counter(
-#     "txn_snapshot_drift_detected_total",
-#     "Snapshot drift detected (ledger vs snapshot mismatch)",
-#     labelnames=["service", "reason"],
-# )
-
-# snapshot_rebuild_total = Counter(
-#     "txn_snapshot_rebuild_total",
-#     "Snapshot rebuild operations performed",
-#     labelnames=["service", "reason"],
-# )
-
-# snapshot_rebuild_latency_seconds = Histogram(
-#     "txn_snapshot_rebuild_latency_seconds",
-#     "Time spent rebuilding snapshots",
-#     labelnames=["service"],
-# )
-
 from __future__ import annotations
 
 from prometheus_client import Counter, Gauge, Histogram

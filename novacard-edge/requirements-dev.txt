@@ -179,7 +179,7 @@ curl -i http://127.0.0.1:8005/purchase \
   -d '{"amount_minor": 111, "currency":"USD"}'
 
 curl -i http://127.0.0.1:8000/transactions/purchase \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjcwMzczOTgsImV4cCI6MTc2NzAzODI5OCwic2NvcGUiOiJ1c2VyIn0.dq2hzfNtAR3j6OB5s13GKODoKmGjF6d4Dn0-JJVofiY" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImsxIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyXzEyMyIsImlzcyI6Im5vdmFjYXJkLWF1dGgiLCJhdWQiOiJub3ZhY2FyZC1hcGkiLCJpYXQiOjE3NjcxMDM1NjgsImV4cCI6MTc2NzEwNDQ2OCwic2NvcGUiOiJ1c2VyIn0.AIYwOv9yrwp3rxrKAg9Dxpdli1hFJ6YZ8L8Iw6Bqi4M" \
   -H "Idempotency-Key: edge-test-9" \
   -H "Content-Type: application/json" \
   -d '{"amount_minor":111,"currency":"USD"}'

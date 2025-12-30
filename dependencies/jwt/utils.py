@@ -1,7 +1,6 @@
 import base64
 import binascii
 import re
-from typing import Optional, Union
 
 try:
     from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurve
@@ -13,7 +12,7 @@ except ModuleNotFoundError:
     pass
 
 
-def force_bytes(value: Union[bytes, str]) -> bytes:
+def force_bytes(value: bytes | str) -> bytes:
     if isinstance(value, str):
         return value.encode("utf-8")
     elif isinstance(value, bytes):
@@ -22,7 +21,7 @@ def force_bytes(value: Union[bytes, str]) -> bytes:
         raise TypeError("Expected a string value")
 
 
-def base64url_decode(input: Union[bytes, str]) -> bytes:
+def base64url_decode(input: bytes | str) -> bytes:
     input_bytes = force_bytes(input)
 
     rem = len(input_bytes) % 4
@@ -37,7 +36,7 @@ def base64url_encode(input: bytes) -> bytes:
     return base64.urlsafe_b64encode(input).replace(b"=", b"")
 
 
-def to_base64url_uint(val: int, *, bit_length: Optional[int] = None) -> bytes:
+def to_base64url_uint(val: int, *, bit_length: int | None = None) -> bytes:
     if val < 0:
         raise ValueError("Must be a positive integer")
 
@@ -49,7 +48,7 @@ def to_base64url_uint(val: int, *, bit_length: Optional[int] = None) -> bytes:
     return base64url_encode(int_bytes)
 
 
-def from_base64url_uint(val: Union[bytes, str]) -> int:
+def from_base64url_uint(val: bytes | str) -> int:
     data = base64url_decode(force_bytes(val))
     return int.from_bytes(data, byteorder="big")
 
@@ -63,7 +62,7 @@ def bytes_to_number(string: bytes) -> int:
     return int(binascii.b2a_hex(string), 16)
 
 
-def bytes_from_int(val: int, *, bit_length: Optional[int] = None) -> bytes:
+def bytes_from_int(val: int, *, bit_length: int | None = None) -> bytes:
     if bit_length is None:
         bit_length = val.bit_length()
     byte_length = (bit_length + 7) // 8

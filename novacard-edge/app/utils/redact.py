@@ -4,6 +4,7 @@ from typing import Any
 
 SENSITIVE_KEYS = {"ssn", "itin", "dob", "date_of_birth", "address", "password", "token", "refresh_token"}
 
+
 def redact_obj(obj: Any) -> Any:
     """
     Shallow+recursive redaction helper for logging only.

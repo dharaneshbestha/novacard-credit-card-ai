@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import os
 import time
+
 from jose import jwt
+
 
 def main():
     issuer = os.getenv("USER_JWT_ISSUER", "novacard-auth")
@@ -33,6 +35,7 @@ def main():
     )
 
     print(token)
+
 
 if __name__ == "__main__":
     main()

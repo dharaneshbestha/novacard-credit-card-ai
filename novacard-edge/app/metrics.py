@@ -19,6 +19,7 @@ circuit_state = Gauge(
     ["service"],
 )
 
+
 def set_circuit_state(service: str, state: str):
     mapping = {"CLOSED": 0, "OPEN": 1, "HALF_OPEN": 2}
     circuit_state.labels(service=service).set(mapping.get(state, -1))

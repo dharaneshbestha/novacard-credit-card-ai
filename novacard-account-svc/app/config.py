@@ -9,4 +9,5 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://novacard:novacard@postgres:5432/novacard"  # local default
     PORT: int = 8004
 
+
 settings = Settings()

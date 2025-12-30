@@ -4,7 +4,7 @@ import json
 import warnings
 from calendar import timegm
 from collections.abc import Iterable, Sequence
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from . import api_jws
@@ -57,10 +57,7 @@ class PyJWT:
     ) -> str:
         # Check that we get a dict
         if not isinstance(payload, dict):
-            raise TypeError(
-                "Expecting a dict object, as JWT only supports "
-                "JSON objects as payloads."
-            )
+            raise TypeError("Expecting a dict object, as JWT only supports " "JSON objects as payloads.")
 
         # Payload
         payload = payload.copy()
@@ -250,7 +247,7 @@ class PyJWT:
 
         self._validate_required_claims(payload, options)
 
-        now = datetime.now(tz=timezone.utc).timestamp()
+        now = datetime.now(tz=UTC).timestamp()
 
         if "iat" in payload and options["verify_iat"]:
             self._validate_iat(payload, now, leeway)
@@ -265,9 +262,7 @@ class PyJWT:
             self._validate_iss(payload, issuer)
 
         if options["verify_aud"]:
-            self._validate_aud(
-                payload, audience, strict=options.get("strict_aud", False)
-            )
+            self._validate_aud(payload, audience, strict=options.get("strict_aud", False))
 
         if options["verify_sub"]:
             self._validate_sub(payload, subject)
@@ -326,9 +321,7 @@ class PyJWT:
         try:
             iat = int(payload["iat"])
         except ValueError:
-            raise InvalidIssuedAtError(
-                "Issued At claim (iat) must be an integer."
-            ) from None
+            raise InvalidIssuedAtError("Issued At claim (iat) must be an integer.") from None
         if iat > (now + leeway):
             raise ImmatureSignatureError("The token is not yet valid (iat)")
 
@@ -355,9 +348,7 @@ class PyJWT:
         try:
             exp = int(payload["exp"])
         except ValueError:
-            raise DecodeError(
-                "Expiration Time claim (exp) must be an integer."
-            ) from None
+            raise DecodeError("Expiration Time claim (exp) must be an integer.") from None
 
         if exp <= (now - leeway):
             raise ExpiredSignatureError("Signature has expired")

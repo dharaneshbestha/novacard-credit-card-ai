@@ -27,13 +27,15 @@ def _body_sha256_hex(body: bytes | None) -> str:
 
 def _canonical_string(method: str, path: str, query: str, ts: int, body_hash: str) -> str:
     # MUST match edge canonical string exactly
-    return "\n".join([
-        method.upper(),
-        path,
-        query or "",
-        str(ts),
-        body_hash,
-    ])
+    return "\n".join(
+        [
+            method.upper(),
+            path,
+            query or "",
+            str(ts),
+            body_hash,
+        ]
+    )
 
 
 class RequestSigningMiddleware(BaseHTTPMiddleware):

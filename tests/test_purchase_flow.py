@@ -1,4 +1,3 @@
-
 import os
 import uuid
 
@@ -8,32 +7,48 @@ import pytest
 pytestmark = pytest.mark.integration
 
 
-TXN_BASE = os.getenv("TXN_BASE", "http://127.0.0.1:8005")
+# TXN_BASE = os.getenv("TXN_BASE", "http://127.0.0.1:8005")
+EDGE_BASE = os.getenv("EDGE_BASE", "http://127.0.0.1:8000")
+
 
 @pytest.mark.asyncio
-async def test_purchase_posted_idempotent(user_jwt):
+async def test_purchase_posted_idempotent():
     idem = f"pytest-{uuid.uuid4()}"
-    token = user_jwt
+    token = os.getenv("USER_JWT")
+    if not token:
+        pytest.skip("USER_JWT not set; skipping purchase flow integration test", allow_module_level=True)
+
     headers = {
         "Authorization": f"Bearer {token}",
         "Idempotency-Key": idem,
         "Content-Type": "application/json",
     }
-
     payload = {"amount_minor": 111, "currency": "USD"}
 
     async with httpx.AsyncClient(timeout=5.0) as client:
-        r1 = await client.post(f"{TXN_BASE}/purchase", headers=headers, json=payload)
-        assert r1.status_code in (200, 402, 409, 500)
+        r1 = await client.post(f"{EDGE_BASE}/transactions/purchase", headers=headers, json=payload)
 
-        body1 = r1.json()
-        assert "status" in body1
-        assert "transaction_id" in body1
+        try:
+            body1 = r1.json()
+        except Exception:
+            pytest.fail(f"Non-JSON response. status={r1.status_code} body={r1.text}")
 
-        # re-try same idempotency key → must return same transaction_id + same status/reason
-        r2 = await client.post(f"{TXN_BASE}/purchase", headers=headers, json=payload)
+        print("R1 status:", r1.status_code)
+        print("R1 body:", body1)
+
+        assert r1.status_code in (200, 402, 409, 500), f"Unexpected status={r1.status_code} body={body1}"
+
+        # Contract checks (no KeyError)
+        assert "status" in body1, f"Missing status. status={r1.status_code} body={body1}"
+        assert "transaction_id" in body1, f"Missing transaction_id. status={r1.status_code} body={body1}"
+        assert "reason" in body1, f"Missing reason. status={r1.status_code} body={body1}"
+
+        r2 = await client.post(f"{EDGE_BASE}/transactions/purchase", headers=headers, json=payload)
         body2 = r2.json()
 
-        assert body2["transaction_id"] == body1["transaction_id"]
-        assert body2["status"] == body1["status"]
+        print("R2 status:", r2.status_code)
+        print("R2 body:", body2)
+
+        assert body2.get("transaction_id") == body1.get("transaction_id")
+        assert body2.get("status") == body1.get("status")
         assert body2.get("reason") == body1.get("reason")

@@ -1,5 +1,6 @@
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
-JWKDict = Dict[str, Any]
+JWKDict = dict[str, Any]
 
 HashlibHash = Callable[..., Any]

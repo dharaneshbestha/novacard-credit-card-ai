@@ -76,7 +76,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                 )
 
             headers = data.get("headers") or {}
-            return Response(content=bytes.fromhex(data["body_hex"]), status_code=int(data["status"]), headers=headers)
+            return Response(
+                content=bytes.fromhex(data["body_hex"]), status_code=int(data["status"]), headers=headers
+            )
 
         # 2) Acquire short lock to avoid duplicate in-flight calls
         # NX = only set if not exists; EX = expire
