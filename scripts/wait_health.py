@@ -1,4 +1,6 @@
-import time, sys, urllib.request
+import sys
+import time
+import urllib.request
 
 urls = [
     "http://127.0.0.1:8000/health",

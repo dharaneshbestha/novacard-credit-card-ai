@@ -8,7 +8,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from app.utils.audit_log import audit_log
+
 from app.config import settings
 from app.db import get_pool
 from app.services.idempotency import (
@@ -18,6 +18,7 @@ from app.services.idempotency import (
     idem_try_lock,
 )
 from app.services.ledger_manager import LedgerManager
+from app.utils.audit_log import audit_log
 
 router = APIRouter(prefix="/purchase", tags=["purchase"])
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Any
 
 SENSITIVE_KEYS = {"authorization", "password", "token", "secret", "api_key"}
