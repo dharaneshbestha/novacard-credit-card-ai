@@ -3,6 +3,7 @@ from typing import Any
 
 SENSITIVE_KEYS = {"authorization", "password", "token", "secret", "api_key"}
 
+
 def redact_dict(d: dict[str, Any]) -> dict[str, Any]:
     out = {}
     for k, v in d.items():
