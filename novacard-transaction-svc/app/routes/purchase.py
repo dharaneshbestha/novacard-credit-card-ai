@@ -8,7 +8,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
+from app.utils.audit_log import audit_log
 from app.config import settings
 from app.db import get_pool
 from app.services.idempotency import (
@@ -92,7 +92,7 @@ async def purchase(
     pool: asyncpg.Pool = Depends(get_pool),
 ):
     user_id = _get_user_id(request)
-
+    rid = getattr(request.state, "request_id", None)
     idem_key = (idempotency_key or "").strip()
     if not idem_key:
         raise HTTPException(status_code=400, detail="missing_idempotency_key")
@@ -106,6 +106,16 @@ async def purchase(
     try:
         await idem_try_lock(user_id, idem_key)
     except IdemInProgress:
+        audit_log(
+            service="transaction-svc",
+            event="idempotency_in_progress",
+            request_id=rid,
+            user_id=user_id,
+            path=request.url.path,
+            method=request.method,
+            status_code=409,
+            detail="idempotency_in_progress",
+        )
         return JSONResponse(
             {"status": "PENDING", "transaction_id": "", "reason": "idempotency_in_progress"},
             status_code=409,
@@ -123,6 +133,16 @@ async def purchase(
             "transaction_id": str(transaction_id),
             "reason": f"config_error:bad_merchant_account_id:{type(e).__name__}",
         }
+        audit_log(
+            service="transaction-svc",
+            event="purchase_failed",
+            request_id=rid,
+            user_id=user_id,
+            path=request.url.path,
+            method=request.method,
+            status_code=500,
+            detail="config_error:bad_merchant_account_id",
+        )
         with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
         return JSONResponse(resp, status_code=500)
@@ -188,6 +208,16 @@ async def purchase(
                     "transaction_id": str(transaction_id),
                     "reason": result.reason or "declined",
                 }
+                audit_log(
+                    service="transaction-svc",
+                    event="purchase_declined",
+                    request_id=rid,
+                    user_id=user_id,
+                    path=request.url.path,
+                    method=request.method,
+                    status_code=402,
+                    detail="declined",
+                )
                 http_status = 402
             else:
                 await conn.execute(
@@ -199,6 +229,16 @@ async def purchase(
                     "transaction_id": str(transaction_id),
                     "reason": "posted",
                 }
+                audit_log(
+                    service="transaction-svc",
+                    event="purchase_posted",
+                    request_id=rid,
+                    user_id=user_id,
+                    path=request.url.path,
+                    method=request.method,
+                    status_code=200,
+                    detail="posted",
+                )
                 http_status = 200
 
         # DB committed successfully -> now write idempotency final
@@ -211,6 +251,16 @@ async def purchase(
             "transaction_id": str(transaction_id),
             "reason": f"http_{e.status_code}:{e.detail}",
         }
+        audit_log(
+            service="transaction-svc",
+            event="purchase_failed",
+            request_id=rid,
+            user_id=user_id,
+            path=request.url.path,
+            method=request.method,
+            status_code=http_status,
+            detail=f"http_{e.status_code}:{e.detail}",
+        )
         http_status = 500 if e.status_code >= 500 else e.status_code
         with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
@@ -222,6 +272,16 @@ async def purchase(
             "transaction_id": str(transaction_id),
             "reason": "internal_error:ForeignKeyViolationError",
         }
+        audit_log(
+            service="transaction-svc",
+            event="purchase_failed",
+            request_id=rid,
+            user_id=user_id,
+            path=request.url.path,
+            method=request.method,
+            status_code=http_status,
+            detail=f"http_{e.status_code}:{e.detail}",
+        )
         with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
         return JSONResponse(resp, status_code=500)
@@ -236,6 +296,16 @@ async def purchase(
             "transaction_id": str(transaction_id),
             "reason": f"internal_error:{type(e).__name__}",
         }
+        audit_log(
+            service="transaction-svc",
+            event="purchase_failed",
+            request_id=rid,
+            user_id=user_id,
+            path=request.url.path,
+            method=request.method,
+            status_code=http_status,
+            detail=f"http_{e.status_code}:{e.detail}",
+        )
         with suppress(Exception):
             await idem_set_final(user_id, idem_key, resp)
         return JSONResponse(resp, status_code=500)
