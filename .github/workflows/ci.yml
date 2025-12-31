@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      # - phase-d
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Ruff lint
+        run: ruff check .
+
+  docker-green:
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio httpx PyJWT
+
+      - name: Build services
+        run: docker compose build
+
+      - name: Start postgres only
+        run: docker compose up -d postgres
+
+      - name: Run migrations + seed
+        run: docker compose run --rm migrate
+
+      - name: Start all services
+        run: docker compose up -d redis auth-mock user-mock account-svc transaction-svc edge
+
+      - name: Wait for health endpoints
+        run: |
+          python - <<'PY'
+          import time, sys
+          import urllib.request
+
+          urls = [
+            "http://127.0.0.1:8000/health",
+            "http://127.0.0.1:8004/health",
+            "http://127.0.0.1:8005/health",
+          ]
+
+          deadline = time.time() + 90
+          last_err = None
+          while time.time() < deadline:
+            ok = True
+            for u in urls:
+              try:
+                r = urllib.request.urlopen(u, timeout=2)
+                if r.status != 200:
+                  ok = False
+              except Exception as e:
+                ok = False
+                last_err = (u, repr(e))
+            if ok:
+              print("All health endpoints OK")
+              sys.exit(0)
+            time.sleep(2)
+
+          print("Health check failed:", last_err)
+          sys.exit(1)
+          PY
+
+      - name: Mint USER_JWT for integration tests
+        run: |
+          python scripts/mint_user_jwt.py > /tmp/user_jwt.txt
+          echo "USER_JWT<<EOF" >> $GITHUB_ENV
+          cat /tmp/user_jwt.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Run pytest (integration)
+        env:
+          EDGE_BASE: http://127.0.0.1:8000
+          ACCT_BASE: http://127.0.0.1:8004
+          TXN_BASE:  http://127.0.0.1:8005
+          USER_JWT:  ${{ env.USER_JWT }}
+        run: |
+          pytest -q
+
+      - name: Show docker logs on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color --tail=400

@@ -1,6 +1,8 @@
 from __future__ import annotations
-from cachetools import TTLCache
+
 import httpx
+from cachetools import TTLCache
+
 
 class JwksClient:
     def __init__(self, jwks_url: str, cache_seconds: int = 900):

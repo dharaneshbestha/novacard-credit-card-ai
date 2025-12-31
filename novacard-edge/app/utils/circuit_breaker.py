@@ -1,9 +1,10 @@
 import time
 from dataclasses import dataclass
 
+
 @dataclass
 class BreakerState:
-    state: str = "CLOSED"          # CLOSED | OPEN | HALF_OPEN
+    state: str = "CLOSED"  # CLOSED | OPEN | HALF_OPEN
     failures: int = 0
     last_failure_ts: float = 0.0
     opened_ts: float = 0.0

@@ -1,0 +1,13 @@
+pyjwt
+prometheus-client
+cryptography>=46.0.3
+fastapi>=0.125.0
+pydantic-settings>=2.12.0
+python-jose>=3.5.0
+uvicorn>=0.38.0
+asyncpg
+redis
+pyjwt
+httpx
+uvicorn[standard]
+fastapi

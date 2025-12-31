@@ -7,22 +7,20 @@ import hmac
 import random
 import time
 import uuid
-from typing import Dict, Optional
 
 import httpx
 from jose import jwt
 from starlette.requests import Request
 
 from app.config import settings
-from app.metrics import downstream_requests_total, downstream_latency_seconds, set_circuit_state
+from app.metrics import downstream_latency_seconds, downstream_requests_total, set_circuit_state
 from app.metrics_security import edge_security_events_total
 from app.utils.circuit_breaker import CircuitBreaker
 from app.utils.downstream_errors import DownstreamError
 
-
 # ---- retry config ----
 IDEMPOTENT_METHODS = {"GET", "HEAD", "OPTIONS"}
-MAX_RETRIES = 2               # total attempts = 1 + MAX_RETRIES
+MAX_RETRIES = 2  # total attempts = 1 + MAX_RETRIES
 BASE_BACKOFF_SECONDS = 0.25
 MAX_BACKOFF_SECONDS = 2.0
 
@@ -30,7 +28,7 @@ CIRCUIT_RETRY_AFTER_SECONDS = 30  # keep in sync with breaker open cooldown
 
 
 def _backoff(attempt: int) -> float:
-    exp = min(MAX_BACKOFF_SECONDS, BASE_BACKOFF_SECONDS * (2 ** attempt))
+    exp = min(MAX_BACKOFF_SECONDS, BASE_BACKOFF_SECONDS * (2**attempt))
     jitter = random.uniform(0, 0.1)
     return exp + jitter
 
@@ -45,16 +43,18 @@ def _b64url(data: bytes) -> str:
 
 def _canonical_string(method: str, path: str, query: str, ts: int, body_hash: str) -> bytes:
     # MUST match user-mock canonical string exactly
-    return "\n".join([
-        method.upper(),
-        path,
-        query or "",
-        str(ts),
-        body_hash,
-    ]).encode("utf-8")
+    return "\n".join(
+        [
+            method.upper(),
+            path,
+            query or "",
+            str(ts),
+            body_hash,
+        ]
+    ).encode("utf-8")
 
 
-def _sign_request(method: str, path: str, query: str, body: bytes) -> Dict[str, str]:
+def _sign_request(method: str, path: str, query: str, body: bytes) -> dict[str, str]:
     """
     HMAC signing headers required by downstream services (user-mock today).
     Uses EDGE signing secret & key id.
@@ -83,7 +83,7 @@ class DownstreamClient:
             "user": CircuitBreaker(),
             "kyc": CircuitBreaker(),
             "account": CircuitBreaker(),
-            "transaction": CircuitBreaker(), 
+            "transaction": CircuitBreaker(),
         }
 
     def _build_service_token(self, *, audience: str) -> str:
@@ -122,7 +122,7 @@ class DownstreamClient:
         service_name: str,
     ) -> httpx.Response:
         breaker = self.breakers.get(service_name)
-       
+
         if not breaker:
             raise DownstreamError(service_name, "config_error", "missing breaker for service")
 
@@ -144,6 +144,7 @@ class DownstreamClient:
         headers.pop("host", None)
 
         request_id = getattr(request.state, "request_id", None)
+        print("[EDGE] forwarding request_id:", request_id)
         user_id = getattr(request.state, "user_id", None)
         scopes = getattr(request.state, "scopes", None)
 
@@ -171,7 +172,9 @@ class DownstreamClient:
 
             # circuit check
             if not breaker.allow():
-                downstream_requests_total.labels(service=service_name, method=method, result="circuit_open").inc()
+                downstream_requests_total.labels(
+                    service=service_name, method=method, result="circuit_open"
+                ).inc()
                 edge_security_events_total.labels(event="downstream_call", result="circuit_open").inc()
                 raise DownstreamError(service_name, "circuit_open", f"state={breaker.state}")
 
@@ -220,7 +223,9 @@ class DownstreamClient:
             except httpx.RequestError as e:
                 breaker.record_failure()
                 set_circuit_state(service_name, breaker.state)
-                downstream_requests_total.labels(service=service_name, method=method, result="unreachable").inc()
+                downstream_requests_total.labels(
+                    service=service_name, method=method, result="unreachable"
+                ).inc()
                 edge_security_events_total.labels(event="downstream_call", result="unreachable").inc()
 
                 if method in IDEMPOTENT_METHODS and attempt < attempts - 1:
@@ -236,6 +241,8 @@ class DownstreamClient:
             except Exception as e:
                 breaker.record_failure()
                 set_circuit_state(service_name, breaker.state)
-                downstream_requests_total.labels(service=service_name, method=method, result="other_error").inc()
+                downstream_requests_total.labels(
+                    service=service_name, method=method, result="other_error"
+                ).inc()
                 edge_security_events_total.labels(event="downstream_call", result="other_error").inc()
                 raise DownstreamError(service_name, "downstream_error", str(e))

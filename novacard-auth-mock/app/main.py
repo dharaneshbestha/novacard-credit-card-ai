@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
 from fastapi import FastAPI
 from jose import jwt
-from app.utils.audit_log import audit_log
+
 from app.config import settings
+from app.utils.audit_log import audit_log
 
 app = FastAPI(title="NovaCard Mock Auth", version="0.1.0")
 
@@ -24,7 +26,7 @@ async def signup(payload: dict):
 
 @app.post("/auth/login")
 async def login(payload: dict):
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
 
     kid = settings.ACTIVE_KID
     secret = settings.KEYS.get(kid)

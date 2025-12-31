@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Gauge, Histogram
 
 # Requests forwarded to downstream services
 downstream_requests_total = Counter(
@@ -18,6 +18,7 @@ circuit_state = Gauge(
     "Circuit breaker state (0=closed, 1=open, 2=half_open)",
     ["service"],
 )
+
 
 def set_circuit_state(service: str, state: str):
     mapping = {"CLOSED": 0, "OPEN": 1, "HALF_OPEN": 2}

@@ -10,8 +10,8 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.config import settings
-from app.utils.audit_log import audit_log
 from app.metrics_security import user_security_events_total
+from app.utils.audit_log import audit_log
 
 PUBLIC_PATHS = {"/health", "/metrics"}
 
@@ -27,13 +27,15 @@ def _body_sha256_hex(body: bytes | None) -> str:
 
 def _canonical_string(method: str, path: str, query: str, ts: int, body_hash: str) -> str:
     # MUST match edge canonical string exactly
-    return "\n".join([
-        method.upper(),
-        path,
-        query or "",
-        str(ts),
-        body_hash,
-    ])
+    return "\n".join(
+        [
+            method.upper(),
+            path,
+            query or "",
+            str(ts),
+            body_hash,
+        ]
+    )
 
 
 class RequestSigningMiddleware(BaseHTTPMiddleware):

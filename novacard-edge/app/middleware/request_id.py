@@ -1,10 +1,13 @@
 import uuid
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+
 from app.utils.audit_log import audit_log
 
 REQUEST_ID_HEADER = "X-Request-Id"
+
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -13,7 +16,7 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
         audit_log(
             service="edge",
             event="request_start",
-            request_id=request.state.request_id,
+            request_id=rid,
             path=str(request.url.path),
             method=request.method,
         )

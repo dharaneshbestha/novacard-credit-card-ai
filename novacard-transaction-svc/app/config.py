@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     IDEM_TTL_SECONDS: int = 3600
 
     # Merchant/system account used for CREDIT leg
-    MERCHANT_ACCOUNT_ID: str = "3bdb55cd-a934-4c92-890d-d3e2e1a14fdc"
+    MERCHANT_ACCOUNT_ID: str = "35a3b574-44d2-4c19-9bd1-a76508ca346f"
 
     # User JWT validation (dev HS256 path)
     USER_JWT_ISSUER: str = "novacard-auth"
@@ -26,6 +27,19 @@ class Settings(BaseSettings):
     USER_JWT_KEYS_JSON: str = '{"k1":"dev_user_jwt_secret_k1"}'
     USER_JWT_KEYS: dict[str, str] = Field(default_factory=dict)
     USER_JWT_ACTIVE_KID: str = "k1"
+
+    SVC_ISSUER: str = "novacard-edge"
+    SVC_AUDIENCE: str = "novacard-transaction"
+    SVC_KEYS_JSON: str = '{"k1":"dev_svc_secret_k1","k2":"dev_svc_secret_k2"}'
+
+    @field_validator("MERCHANT_ACCOUNT_ID", mode="before")
+    @classmethod
+    def clean_uuid(cls, v):
+        if isinstance(v, str):
+            # This strips quotes and spaces automatically
+            return v.strip().replace('"', "").replace("'", "")
+            print(v)
+        return v
 
     @field_validator("USER_JWT_KEYS", mode="before")
     @classmethod

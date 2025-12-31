@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
+
 from fastapi import APIRouter
 
 from app.services.snapshot_rebuild import rebuild_snapshot_for_account

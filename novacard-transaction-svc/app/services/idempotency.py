@@ -4,8 +4,8 @@ import json
 from typing import Any
 
 from app.config import settings
-from app.redis_client import get_redis
 from app.metrics import idempotency_total
+from app.redis_client import get_redis
 
 
 class IdemInProgress(Exception):
@@ -27,7 +27,7 @@ async def idem_get_final(user_id: str, idem_key: str) -> dict[str, Any] | None:
         return None
 
     # aioredis can return str (decode_responses=True) or bytes
-    if isinstance(raw, (bytes, bytearray)):
+    if isinstance(raw, bytes | bytearray):
         raw = raw.decode("utf-8", errors="ignore")
 
     raw = raw.strip()
@@ -61,16 +61,36 @@ async def idem_try_lock(user_id: str, idem_key: str) -> None:
         raise IdemInProgress()
     idempotency_total.labels(result="lock_acquired").inc()
 
+
 def _lock_key(user_id: str, idem_key: str) -> str:
     return f"txn:lock:{user_id}:{idem_key}"
+
 
 def _final_key(user_id: str, idem_key: str) -> str:
     return f"txn:final:{user_id}:{idem_key}"
 
+
+def _json_safe(obj: Any) -> str:
+    # Ensures UUID/datetime/etc never breaks json serialization
+    return json.dumps(obj, default=str)
+
+
 async def idem_set_final(user_id: str, idem_key: str, response: dict) -> None:
     r = await get_redis()
-    await r.set(_final_key(user_id, idem_key), json.dumps(response), ex=int(settings.IDEM_TTL_SECONDS))
-    await r.delete(_lock_key(user_id, idem_key))  # ✅ critical
+
+    payload = _json_safe(response)  # ✅ prevents UUID serialization crashes
+
+    await r.set(
+        _final_key(user_id, idem_key),
+        payload,
+        ex=int(settings.IDEM_TTL_SECONDS),
+    )
+
+    # ✅ critical: release lock
+    await r.delete(_lock_key(user_id, idem_key))
+
+    idempotency_total.labels(result="final_written").inc()
+
 
 # async def idem_set_final(user_id: str, idem_key: str, response: dict[str, Any]) -> None:
 #     r = await get_redis()

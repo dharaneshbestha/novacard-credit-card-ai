@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-import asyncpg
 from uuid import UUID
+
+import asyncpg
+
 from app.metrics import snapshot_rebuild_total
 
 
-async def rebuild_snapshot_for_account(conn: asyncpg.Connection, account_id: UUID, *, service: str = "transaction") -> None:
+async def rebuild_snapshot_for_account(
+    conn: asyncpg.Connection, account_id: UUID, *, service: str = "transaction"
+) -> None:
     """
     Rebuild snapshot from authoritative ledger. Must be called inside an open DB transaction.
     """

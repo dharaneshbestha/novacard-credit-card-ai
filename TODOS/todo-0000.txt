@@ -1,0 +1,4 @@
+	•	TODO: Replace hard-coded predetermined account UUIDs with a “system bootstrap”:
+	•	On startup (or migration step), ensure system accounts exist (merchant/system/reserve)
+	•	Store stable identifiers (like merchant_system) and map to UUIDs in DB
+	•	Avoid manual env edits long-term

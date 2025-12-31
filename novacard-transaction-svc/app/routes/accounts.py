@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
+
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
@@ -24,6 +25,8 @@ async def get_balance(
     x_user_id: str = Header(..., alias="X-User-Id"),
 ):
     pool = await get_pool()
+    print(f"DEBUG: Looking for Merchant ID accounts.py: {account_id}")
+    print(f"DEBUG: Type of ID: {type(account_id)}")
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """

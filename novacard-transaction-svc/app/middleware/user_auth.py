@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from jose import jwt
-from jose.exceptions import JWTError, ExpiredSignatureError
+from jose.exceptions import ExpiredSignatureError, JWTError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -60,7 +60,9 @@ class UserAuthMiddleware(BaseHTTPMiddleware):
                 return JSONResponse({"detail": "invalid_token", "reason": "missing_sub"}, status_code=401)
 
             # Set user context for routes/services
+
             request.state.user_id = str(sub)
+            print("user_id =", request.state.user_id)
             request.state.scopes = claims.get("scope", "")
             request.state.user_claims = claims
 

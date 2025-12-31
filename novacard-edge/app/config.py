@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import json
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import AnyHttpUrl, Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     # print("[EDGE CONFIG] EDGE_DEV_REUSE_SVC_TOKEN:", settings.EDGE_DEV_REUSE_SVC_TOKEN)
@@ -15,7 +18,7 @@ class Settings(BaseSettings):
     AUTH_BASE_URL: AnyHttpUrl = "http://127.0.0.1:8001"
     USER_BASE_URL: AnyHttpUrl = "http://127.0.0.1:8002"
     KYC_BASE_URL: AnyHttpUrl = "http://127.0.0.1:8003"
-    TXN_BASE_URL: AnyHttpUrl = "http://transaction-svc:8005"
+    EDGE_TXN_BASE_URL: AnyHttpUrl = "http://transaction-svc:8005"
     # ---- User JWT verification (Route A: HS256 secrets) ----
     USER_JWT_ISSUER: str = "novacard-auth"
     USER_JWT_AUDIENCE: str = "novacard-api"

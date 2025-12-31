@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
     SVC_KEYS_JSON: str = '{"k1":"dev_svc_secret_k1","k2":"dev_svc_secret_k2"}'
     SVC_KEYS: dict[str, str] = Field(default_factory=dict)
     REPLAY_FAIL_OPEN: bool = False  # Prod-safe defaults
+
     @field_validator("SVC_KEYS", mode="before")
     @classmethod
     def parse_svc_keys(cls, v, info):

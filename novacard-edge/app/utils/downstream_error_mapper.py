@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from starlette.responses import JSONResponse
-from app.utils.downstream_errors import DownstreamError
 
+from app.utils.downstream_errors import DownstreamError
 
 RETRYABLE_CODES = {
     "downstream_timeout",
