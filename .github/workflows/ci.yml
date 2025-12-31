@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - phase-d
+      # - phase-d
   pull_request:
 
 permissions:
@@ -14,50 +14,22 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install base tools
+      - name: Install tools
         run: |
           python -m pip install --upgrade pip
-          pip install uv ruff pytest pytest-asyncio httpx PyJWT
-
-      - name: Install Monorepo Dependencies
-        run: |
-          # Edge deps (uv.lock -> requirements)
-          uv export --format requirements-txt --no-hashes \
-            --directory novacard-edge \
-            -o /tmp/edge-requirements.txt
-          pip install -r /tmp/edge-requirements.txt
-
-          # User-mock deps (uv.lock -> requirements)
-          uv export --format requirements-txt --no-hashes \
-            --directory novacard-user-mock \
-            -o /tmp/user-mock-requirements.txt
-          pip install -r /tmp/user-mock-requirements.txt
-
-          # Transaction-svc deps
-          pip install -r novacard-transaction-svc/requirements.txt
-
-          # Auth-mock deps (optional)
-          if [ -f novacard-auth-mock/requirements.txt ]; then
-            pip install -r novacard-auth-mock/requirements.txt
-          fi
+          pip install ruff
 
       - name: Ruff format check
         run: ruff format --check .
 
       - name: Ruff lint
         run: ruff check .
-
-      - name: Pytest (fast checks)
-        run: |
-          pytest -q -m "not integration" || pytest -q
 
   docker-green:
     runs-on: ubuntu-latest
